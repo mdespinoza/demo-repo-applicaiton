@@ -1,0 +1,52 @@
+# Claude Code
+.claude/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# Large dataset files (exceed GitHub 100MB limit)
+datasets/ecg_data/mitbih_train.csv
+datasets/ecg_data/mitbih_test.csv
+
+# Runtime cache (auto-generated)
+data_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local

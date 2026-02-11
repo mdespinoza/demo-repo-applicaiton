@@ -1,0 +1,466 @@
+/* ========================================================
+   COMMAND CENTER — Modern Dark Dashboard
+   ======================================================== */
+
+/* ---------- Google Font ---------- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+/* ---------- CSS Variables ---------- */
+:root {
+    --bg-base: #0B0F19;
+    --bg-surface: #111827;
+    --bg-card: rgba(17, 24, 39, 0.7);
+    --bg-card-solid: #151D2E;
+    --bg-elevated: #1A2332;
+    --bg-input: #0F1726;
+    --border: rgba(99, 125, 175, 0.12);
+    --border-hover: rgba(99, 125, 175, 0.25);
+    --border-active: rgba(56, 189, 248, 0.4);
+    --text-primary: #E2E8F0;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --accent-blue: #38BDF8;
+    --accent-cyan: #22D3EE;
+    --accent-indigo: #818CF8;
+    --accent-emerald: #34D399;
+    --accent-amber: #FBBF24;
+    --accent-rose: #FB7185;
+    --gradient-primary: linear-gradient(135deg, #38BDF8, #818CF8);
+    --gradient-header: linear-gradient(135deg, #0B0F19 0%, #111827 50%, #0F172A 100%);
+    --glow-blue: rgba(56, 189, 248, 0.12);
+    --glow-indigo: rgba(129, 140, 248, 0.10);
+    --glass: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.3);
+    --shadow-glow: 0 0 20px rgba(56, 189, 248, 0.08);
+}
+
+/* ---------- Base ---------- */
+body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- App Header ---------- */
+.app-header {
+    background: var(--gradient-header);
+    color: var(--text-primary);
+    padding: 0;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle grid pattern */
+.app-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+}
+
+/* Glow orb top-right */
+.app-header::after {
+    content: '';
+    position: absolute;
+    top: -60px;
+    right: -40px;
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.header-inner {
+    position: relative;
+    z-index: 1;
+    padding: 26px 0 20px;
+}
+
+.header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(56, 189, 248, 0.1);
+    color: var(--accent-blue);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    margin-bottom: 12px;
+    backdrop-filter: blur(8px);
+}
+
+.app-header h1 {
+    font-weight: 900;
+    font-size: 2rem;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+    color: #F8FAFC;
+    line-height: 1.1;
+}
+
+.app-header h1 .highlight {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.app-header p {
+    color: var(--text-muted);
+    margin-bottom: 0;
+    font-size: 0.88rem;
+    font-weight: 400;
+    letter-spacing: 0.2px;
+}
+
+/* ---------- Tab Navigation ---------- */
+.nav-tabs {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    gap: 4px;
+}
+
+.nav-tabs .nav-link {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.78rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 13px 20px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+    position: relative;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--text-secondary);
+    border-bottom-color: rgba(56, 189, 248, 0.25);
+    background: rgba(56, 189, 248, 0.03);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--accent-blue);
+    background: transparent;
+    border-color: transparent;
+    border-bottom: 2px solid var(--accent-blue);
+    font-weight: 700;
+}
+
+.nav-tabs .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 20%;
+    right: 20%;
+    height: 2px;
+    background: var(--accent-blue);
+    filter: blur(4px);
+}
+
+/* ---------- Container ---------- */
+.container-fluid {
+    padding-left: 28px;
+    padding-right: 28px;
+}
+
+/* ---------- KPI Cards ---------- */
+.kpi-card {
+    text-align: center;
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow), var(--shadow-glow);
+    border-color: var(--border-hover);
+}
+
+.kpi-title {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.kpi-value {
+    font-weight: 800;
+    margin-bottom: 0;
+    font-size: 1.6rem;
+    letter-spacing: -0.5px;
+}
+
+/* ---------- Chart Cards ---------- */
+.chart-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.25s ease;
+}
+
+.chart-card:hover {
+    border-color: var(--border-hover);
+}
+
+.chart-title {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.2px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+/* ---------- Filter Panel ---------- */
+.filter-panel {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    z-index: 10;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+/* ---------- Dash Dropdowns & Inputs ---------- */
+.Select-control,
+.dash-dropdown .Select-control {
+    background-color: var(--bg-input) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius-sm) !important;
+}
+
+.Select-control:hover {
+    border-color: var(--border-hover) !important;
+}
+
+.Select-menu-outer {
+    background-color: var(--bg-elevated) !important;
+    border-color: var(--border) !important;
+    border-radius: var(--radius-sm) !important;
+    box-shadow: var(--shadow) !important;
+    z-index: 20 !important;
+}
+
+.Select-option {
+    background-color: var(--bg-elevated) !important;
+    color: var(--text-primary) !important;
+    transition: background-color 0.15s ease;
+}
+
+.Select-option.is-focused {
+    background-color: rgba(56, 189, 248, 0.08) !important;
+    color: var(--accent-blue) !important;
+}
+
+.Select-value-label {
+    color: var(--text-primary) !important;
+}
+
+.Select-placeholder {
+    color: var(--text-muted) !important;
+}
+
+/* Dash slider */
+.rc-slider-track {
+    background: var(--gradient-primary) !important;
+    height: 4px;
+}
+
+.rc-slider-handle {
+    border-color: var(--accent-blue) !important;
+    background-color: var(--bg-surface) !important;
+    box-shadow: 0 0 8px var(--glow-blue) !important;
+}
+
+.rc-slider-rail {
+    background-color: var(--border) !important;
+}
+
+/* Radio items & checklists */
+.form-check-input:checked {
+    background-color: var(--accent-blue) !important;
+    border-color: var(--accent-blue) !important;
+}
+
+/* ---------- DataTable ---------- */
+.dash-table-container .dash-spreadsheet-container {
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td {
+    background-color: var(--bg-card-solid) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border) !important;
+    font-size: 0.85rem;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th {
+    background-color: var(--bg-base) !important;
+    color: var(--accent-blue) !important;
+    border-color: var(--border) !important;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ---------- Word Cloud ---------- */
+.wordcloud-container {
+    text-align: center;
+    padding: 16px;
+}
+
+.wordcloud-container img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+}
+
+/* ---------- Tab Content ---------- */
+.tab-content-wrapper {
+    padding: 24px 0;
+}
+
+/* ---------- Loading Spinner ---------- */
+._dash-loading {
+    margin: auto;
+}
+
+.dash-spinner {
+    border-color: var(--accent-blue) !important;
+    border-right-color: transparent !important;
+}
+
+/* ---------- Cards (Bootstrap override) ---------- */
+.card {
+    background-color: var(--bg-card-solid);
+    border-color: var(--glass-border);
+    color: var(--text-primary);
+    border-radius: var(--radius);
+}
+
+.card-body {
+    color: var(--text-primary);
+}
+
+/* ---------- Scrollbar ---------- */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.35);
+}
+
+/* ---------- Selection ---------- */
+::selection {
+    background: rgba(56, 189, 248, 0.25);
+    color: #fff;
+}
+
+/* ---------- Info Tooltip Icon ---------- */
+.chart-info-icon {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    cursor: help;
+    transition: color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.chart-info-icon:hover {
+    color: var(--accent-blue);
+}
+
+/* ---------- Instructions Tab ---------- */
+.instructions-section {
+    line-height: 1.75;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.instructions-section li {
+    margin-bottom: 4px;
+}
+
+.instructions-icon {
+    color: var(--accent-blue);
+    font-size: 1.1rem;
+    vertical-align: middle;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+    .app-header h1 {
+        font-size: 1.4rem;
+    }
+
+    .kpi-card {
+        margin-bottom: 8px;
+    }
+
+    .nav-tabs .nav-link {
+        padding: 10px 14px;
+        font-size: 0.7rem;
+    }
+
+    .container-fluid {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}
