@@ -6,3 +6,4 @@ numpy==1.26.4
 wordcloud==1.9.3
 gunicorn==22.0.0
 statsmodels==0.14.6
+scikit-learn==1.5.2
