@@ -1,5 +1,36 @@
 # ECG Heartbeat Classification Data
 
+## Sample Data vs Full Dataset
+
+This repository includes **trimmed sample versions** of the ECG data for demonstration and testing purposes:
+
+| Sample File | Rows | Classes | Size | Source |
+|-------------|------|---------|------|--------|
+| `mitbih_train_sample.csv` | 500 | 5 | ~1.1 MB | 100 samples/class from full training set |
+| `mitbih_test_sample.csv` | 500 | 5 | ~1.2 MB | 100 samples/class from full test set |
+| `ptbdb_normal_sample.csv` | 100 | 1 | ~0.3 MB | 100 samples from normal heartbeats |
+| `ptbdb_abnormal_sample.csv` | 100 | 1 | ~0.2 MB | 100 samples from abnormal heartbeats |
+
+**Total sample size:** ~2.8 MB (0.5% of original dataset)
+
+### To use the full dataset:
+
+1. Download the complete files from [Kaggle - ECG Heartbeat Categorization Dataset](https://www.kaggle.com/datasets/shayanfazeli/heartbeat)
+2. Extract and place in `datasets/ecg_data/`:
+   - `mitbih_train.csv` (392 MB, 87,554 rows)
+   - `mitbih_test.csv` (98 MB, 21,892 rows)
+   - `ptbdb_normal.csv` (18 MB, 4,046 rows)
+   - `ptbdb_abnormal.csv` (47 MB, 10,506 rows)
+3. The application will automatically use the full dataset if available, otherwise falls back to samples
+
+### Sample Creation:
+
+- Samples were created using stratified random sampling with `random_state=42`
+- Class distributions are preserved (100 samples per class)
+- All 188 columns (187 signal points + 1 label) are maintained
+- Sample files use identical CSV format (no headers, comma-delimited)
+- Run `python3 create_trimmed_samples.py` to regenerate samples from full dataset
+
 ## Overview
 
 This dataset contains pre-processed and segmented electrocardiogram (ECG) signals derived from two well-known physiology databases:
@@ -18,6 +49,8 @@ Each row represents a single heartbeat that has been extracted, padded/truncated
 
 ## Files
 
+### Full Dataset (not included in repository)
+
 | File | Size | Records | Source Database | Purpose |
 |------|------|---------|-----------------|---------|
 | `mitbih_train.csv` | 392 MB | 87,554 | MIT-BIH Arrhythmia | Training set |
@@ -26,6 +59,17 @@ Each row represents a single heartbeat that has been extracted, padded/truncated
 | `ptbdb_normal.csv` | 18 MB | 4,046 | PTB Diagnostic | Normal heartbeats |
 
 **Total:** 123,998 heartbeat records across all files, approximately 555 MB combined.
+
+### Sample Dataset (included in repository)
+
+| File | Size | Records | Source Database | Purpose |
+|------|------|---------|-----------------|---------|
+| `mitbih_train_sample.csv` | 1.1 MB | 500 | MIT-BIH Arrhythmia | Training set sample (100/class) |
+| `mitbih_test_sample.csv` | 1.2 MB | 500 | MIT-BIH Arrhythmia | Test set sample (100/class) |
+| `ptbdb_abnormal_sample.csv` | 0.2 MB | 100 | PTB Diagnostic | Abnormal heartbeats sample |
+| `ptbdb_normal_sample.csv` | 0.3 MB | 100 | PTB Diagnostic | Normal heartbeats sample |
+
+**Total:** 1,200 heartbeat records across all sample files, approximately 2.8 MB combined.
 
 ## Data Format
 
