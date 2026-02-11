@@ -112,6 +112,15 @@ def _precompute_ecg():
         dfs = {}
         for fname in files:
             fpath = os.path.join(ECG_DIR, fname)
+
+            # Try full dataset first, fall back to sample if not available
+            if not os.path.exists(fpath):
+                # Try sample version
+                sample_fname = fname.replace(".csv", "_sample.csv")
+                fpath = os.path.join(ECG_DIR, sample_fname)
+                if os.path.exists(fpath):
+                    print(f"ℹ️  Using sample data: {sample_fname} (full dataset not found)")
+
             if os.path.exists(fpath):
                 df = pd.read_csv(fpath, header=None)
                 split_key = "train" if "train" in fname or "normal" in fname else "test"
@@ -170,6 +179,13 @@ def _precompute_ecg():
         if dataset_name == "ptbdb":
             normal_path = os.path.join(ECG_DIR, "ptbdb_normal.csv")
             abnormal_path = os.path.join(ECG_DIR, "ptbdb_abnormal.csv")
+
+            # Try full dataset first, fall back to sample if not available
+            if not os.path.exists(normal_path):
+                normal_path = os.path.join(ECG_DIR, "ptbdb_normal_sample.csv")
+            if not os.path.exists(abnormal_path):
+                abnormal_path = os.path.join(ECG_DIR, "ptbdb_abnormal_sample.csv")
+
             if os.path.exists(normal_path) and os.path.exists(abnormal_path):
                 df_normal = pd.read_csv(normal_path, header=None)
                 df_abnormal = pd.read_csv(abnormal_path, header=None)

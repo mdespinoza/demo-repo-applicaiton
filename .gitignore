@@ -37,6 +37,11 @@ build/
 # Large dataset files (exceed GitHub 100MB limit)
 datasets/ecg_data/mitbih_train.csv
 datasets/ecg_data/mitbih_test.csv
+datasets/ecg_data/ptbdb_normal.csv
+datasets/ecg_data/ptbdb_abnormal.csv
+
+# Keep sample files - these are small trimmed versions for demo/testing
+!datasets/ecg_data/*_sample.csv
 
 # Runtime cache (auto-generated)
 data_cache/
