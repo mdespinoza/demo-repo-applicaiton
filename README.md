@@ -22,12 +22,31 @@
 
 ---
 
-> **This is a demo application built purely for fun to demonstrate the ability to use Large Language Models (LLMs) to design, develop, and deploy a fully functional data visualization dashboard from scratch.** Every line of code, every visualization, and every design decision in this project was guided through LLM-assisted development.
+> **This is a demo application — not production-ready.** It was built purely for fun to demonstrate the ability to use Large Language Models (LLMs) to design, develop, and deploy a fully functional data visualization dashboard from scratch. It is intended solely for demonstration and educational purposes. Every line of code, every visualization, and every design decision in this project was guided through LLM-assisted development.
+
+---
+
+## Built in a Day
+
+This entire application was built from scratch in a single day — roughly **5-6 hours of active development** — using [Claude Code](https://claude.com/claude-code) as an AI pair programmer.
+
+| Metric | Value |
+|--------|-------|
+| **Total commits** | 50 |
+| **Development window** | ~33 hours (Feb 11 12:56am – Feb 12 10:20am) |
+| **Active coding time** | ~5–6 hours across 4 sessions |
+| **Lines of application code** | ~11,000 (Python, JS, CSS) |
+| **Interactive visualizations** | 50+ |
+| **Datasets integrated** | 4 |
+| **Test files** | 7 (~1,500 lines) |
+
+Every commit in the git history was authored with LLM assistance — from initial scaffolding and data pipeline design, through callback wiring and signal processing, to CSS theming and Kubernetes manifests.
 
 ---
 
 ## Table of Contents
 
+- [Built in a Day](#built-in-a-day)
 - [Overview](#overview)
 - [Screenshots](#screenshots)
 - [Features](#features)
@@ -57,6 +76,7 @@
 - [Data Processing Pipeline](#data-processing-pipeline)
 - [Architecture Decision Records](#architecture-decision-records)
 - [Contributing](#contributing)
+- [Disclaimer](#disclaimer)
 - [License](#license)
 
 ---
@@ -158,7 +178,7 @@ After starting the application, navigate to `http://localhost:8050`.
 - **Health & Metrics Endpoints** — Built-in `/health` and `/metrics` JSON endpoints for monitoring and load balancer integration
 - **Structured Logging** — Dual-format logging (human-readable text or JSON) configurable via environment variables
 - **Docker & Kubernetes Ready** — Multi-stage Docker build, Docker Compose for development, and Kubernetes manifests with HPA autoscaling
-- **Production-Ready** — Gunicorn-compatible WSGI server, in-memory caching, Parquet caching, and precomputed data pipelines
+- **Deployment-Ready Scaffolding** — Gunicorn-compatible WSGI server, in-memory caching, Parquet caching, and precomputed data pipelines (demo only — not production-hardened)
 
 ---
 
@@ -875,13 +895,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributing guide, includin
 
 ---
 
-## Why This Project Exists
+## Disclaimer
 
-This dashboard was built as a **fun personal project** to explore and demonstrate how Large Language Models can be used as development partners to create real, functional software. The goal was to see how far LLM-assisted development could go — from initial architecture decisions, through data pipeline design, to polished interactive visualizations with a production-ready deployment setup.
+> **This application is not production-ready and is not intended for production use, real analytical decision-making, or deployment in any operational environment.** It is purely a demonstration and educational project.
+
+This dashboard was built as a **fun personal project** to explore and demonstrate how Large Language Models can be used as development partners to create real, functional software. The goal was to see how far LLM-assisted development could go — from initial architecture decisions, through data pipeline design, to polished interactive visualizations — all within a single day of work.
 
 The result is a fully working multi-domain analytics platform that processes over **130,000 military equipment records**, **124,000 ECG heartbeat signals**, **776 military installations**, and **3,800 medical transcriptions** — all visualized through a modern, interactive web interface.
 
-**This is not intended for production use or real analytical decision-making.** It's a demonstration of what's possible when combining human creativity with AI-assisted development.
+It's a demonstration of what's possible when combining human creativity with AI-assisted development — nothing more, nothing less.
 
 ---
 
