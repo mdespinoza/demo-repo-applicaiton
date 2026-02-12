@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: analytics-dashboard-config
+  labels:
+    app: analytics-dashboard
+data:
+  DASH_ENV: "production"
+  DASH_HOST: "0.0.0.0"
+  DASH_PORT: "8050"
+  DASH_DEBUG: "false"
+  DASH_LOG_LEVEL: "WARNING"
+  DASH_LOG_FORMAT: "json"
+  GUNICORN_WORKERS: "4"
+  GUNICORN_TIMEOUT: "120"

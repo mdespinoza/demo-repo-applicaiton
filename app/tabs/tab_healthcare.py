@@ -46,6 +46,11 @@ def _extract_keywords(df):
 
 
 def layout():
+    """Build the Healthcare Documentation tab layout with filters and chart containers.
+
+    Returns:
+        dash.html.Div: Complete tab layout with filter panel, charts, and data table.
+    """
     df = load_healthcare()
     specialties = sorted(df["medical_specialty"].dropna().unique())
 
@@ -286,6 +291,15 @@ def layout():
     Input("health-keyword-search", "value"),
 )
 def filter_healthcare_data(specialties, keyword):
+    """Filter healthcare data by specialty and keyword, store pre-computed stats.
+
+    Args:
+        specialties: List of selected medical specialties, or None for all.
+        keyword: Search string to filter by keyword column, or None.
+
+    Returns:
+        str: JSON-encoded dict with filtered DataFrame and specialty statistics.
+    """
     logger.info("Healthcare filter callback: specialties=%s, keyword=%s", specialties, keyword)
     df = load_healthcare()
 
@@ -322,6 +336,14 @@ def filter_healthcare_data(specialties, keyword):
     Input("health-filtered-store", "data"),
 )
 def update_health_distribution(store_data):
+    """Generate specialty distribution bar chart and transcription length box plot.
+
+    Args:
+        store_data: JSON string from health-filtered-store.
+
+    Returns:
+        tuple: (spec_fig, box_fig) Plotly Figure objects.
+    """
     if store_data is None:
         return no_update, no_update
 
@@ -374,6 +396,14 @@ def update_health_distribution(store_data):
     Input("health-filtered-store", "data"),
 )
 def update_health_analysis(store_data):
+    """Generate demand quadrant, Pareto chart, and resource allocation index.
+
+    Args:
+        store_data: JSON string from health-filtered-store.
+
+    Returns:
+        tuple: (quadrant_fig, pareto_fig, resource_fig) Plotly Figure objects.
+    """
     if store_data is None:
         return no_update, no_update, no_update
 
@@ -496,6 +526,14 @@ def update_health_analysis(store_data):
     Input("health-filtered-store", "data"),
 )
 def update_health_keywords_table(store_data):
+    """Generate top keywords bar chart and populate the data table.
+
+    Args:
+        store_data: JSON string from health-filtered-store.
+
+    Returns:
+        tuple: (kw_fig, table_data) where table_data is a list of row dicts.
+    """
     if store_data is None:
         return no_update, no_update
 
@@ -539,6 +577,15 @@ def update_health_keywords_table(store_data):
     State("health-datatable", "data"),
 )
 def show_transcription(selected_rows, data):
+    """Show the full transcription text for a selected data table row.
+
+    Args:
+        selected_rows: List of selected row indices from the DataTable.
+        data: Current DataTable data (list of row dicts).
+
+    Returns:
+        tuple: (is_open, transcription_text) for the collapse component.
+    """
     if not selected_rows or not data:
         return False, ""
 

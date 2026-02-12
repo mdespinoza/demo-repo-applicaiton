@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-dashboard
+  labels:
+    app: analytics-dashboard
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: analytics-dashboard
+  template:
+    metadata:
+      labels:
+        app: analytics-dashboard
+    spec:
+      containers:
+        - name: dashboard
+          image: analytics-dashboard:latest
+          ports:
+            - containerPort: 8050
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: analytics-dashboard-config
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8050
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8050
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: cache-volume
+              mountPath: /app/data_cache
+      volumes:
+        - name: cache-volume
+          emptyDir: {}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: analytics-dashboard
+  labels:
+    app: analytics-dashboard
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: analytics-dashboard
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

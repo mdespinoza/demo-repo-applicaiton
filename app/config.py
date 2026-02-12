@@ -133,7 +133,16 @@ FSC_CATEGORIES = {
 
 # Simplified category mapping
 def get_equipment_category(nsn):
-    """Map NSN to a simplified equipment category."""
+    """Map a National Stock Number (NSN) to a simplified equipment category.
+
+    Args:
+        nsn: NSN string (e.g., "1005-00-589-1271"). The first 2 digits
+             identify the Federal Supply Class.
+
+    Returns:
+        str: Category name (e.g., "Weapons & Firearms", "Vehicles & Transport"),
+             or "Other" if the prefix is unrecognized or input is invalid.
+    """
     if not isinstance(nsn, str) or len(nsn) < 2:
         return "Other"
     prefix = nsn[:2]

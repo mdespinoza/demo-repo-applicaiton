@@ -19,6 +19,14 @@ logger = get_logger(__name__)
 
 
 def get_branch_color(comp):
+    """Return the display color for a military branch component name.
+
+    Args:
+        comp: Component/branch name string (e.g., "Army", "Navy").
+
+    Returns:
+        str: Hex color string from BRANCH_COLORS, or the "Other" fallback.
+    """
     for branch, color in BRANCH_COLORS.items():
         if branch.lower() in comp.lower():
             return color
@@ -26,6 +34,11 @@ def get_branch_color(comp):
 
 
 def layout():
+    """Build the Military Bases tab layout with filters and chart containers.
+
+    Returns:
+        dash.html.Div: Complete tab layout with filter panel and chart grid.
+    """
     df = load_bases()
     components = sorted(df["COMPONENT"].dropna().unique())
     statuses = sorted(df["Oper Stat"].dropna().unique())
@@ -244,6 +257,17 @@ def layout():
     Input("bases-joint-filter", "value"),
 )
 def update_bases_filter(components, statuses, states, joints):
+    """Filter bases data and store in dcc.Store with pre-computed hover text.
+
+    Args:
+        components: Selected branch/component values, or None for all.
+        statuses: Selected operational status values, or None for all.
+        states: Selected state/territory values, or None for all.
+        joints: Selected joint base values, or None for all.
+
+    Returns:
+        str: JSON-encoded dict containing the filtered DataFrame.
+    """
     logger.info(
         "Bases callback: components=%s, statuses=%s, states=%s, joints=%s", components, statuses, states, joints
     )
@@ -286,6 +310,14 @@ def update_bases_filter(components, statuses, states, joints):
     Input("bases-filtered-store", "data"),
 )
 def update_bases_maps(store_data):
+    """Generate interactive base map and state-level density choropleth.
+
+    Args:
+        store_data: JSON string from bases-filtered-store.
+
+    Returns:
+        tuple: (map_fig, density_fig) Plotly Figure objects.
+    """
     if store_data is None:
         return no_update, no_update
 
@@ -388,6 +420,14 @@ def update_bases_maps(store_data):
     Input("bases-filtered-store", "data"),
 )
 def update_bases_summary(store_data):
+    """Generate branch distribution and operational status donut charts.
+
+    Args:
+        store_data: JSON string from bases-filtered-store.
+
+    Returns:
+        tuple: (branch_fig, status_fig) Plotly Figure objects.
+    """
     if store_data is None:
         return no_update, no_update
 
@@ -455,6 +495,14 @@ def update_bases_summary(store_data):
     Input("bases-filtered-store", "data"),
 )
 def update_bases_state(store_data):
+    """Generate state-level bar chart and joint base analysis figures.
+
+    Args:
+        store_data: JSON string from bases-filtered-store.
+
+    Returns:
+        tuple: (state_fig, joint_fig) Plotly Figure objects.
+    """
     if store_data is None:
         return no_update, no_update
 
@@ -519,6 +567,14 @@ def update_bases_state(store_data):
     Input("bases-filtered-store", "data"),
 )
 def update_bases_detail(store_data):
+    """Generate sunburst, small multiples, size box plot, and area-perimeter scatter.
+
+    Args:
+        store_data: JSON string from bases-filtered-store.
+
+    Returns:
+        tuple: (sunburst_fig, sm_fig, size_box_fig, ap_fig) Plotly Figure objects.
+    """
     if store_data is None:
         return no_update, no_update, no_update, no_update
 

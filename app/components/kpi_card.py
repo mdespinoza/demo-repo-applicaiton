@@ -5,7 +5,18 @@ from dash import html
 
 
 def kpi_card(title, value, icon=None, color="#3498DB", info=None):
-    """Create a KPI card with title and value."""
+    """Create a styled KPI card component for dashboard metrics.
+
+    Args:
+        title: Display title for the KPI (e.g., "Total Items").
+        value: Formatted value string (e.g., "1,234" or "$5.6M").
+        icon: Unused, reserved for future icon support.
+        color: Hex color string for the value text.
+        info: Optional tooltip text shown via an info icon beside the title.
+
+    Returns:
+        dbc.Card: Bootstrap card component with title, value, and optional tooltip.
+    """
     title_children = [html.Span(title)]
     tooltips = []
     if info:

@@ -383,6 +383,12 @@ def _build_fiducial_table(fiducials):
 
 
 def layout():
+    """Build the ECG Analysis tab layout with playback, waveform browser, and charts.
+
+    Returns:
+        dash.html.Div: Complete tab layout with dataset selector, playback monitor,
+        fiducial panel, waveform browser, and analysis charts.
+    """
     return html.Div(
         [
             # Dataset selector
@@ -730,6 +736,14 @@ def layout():
     Input("ecg-dataset-select", "value"),
 )
 def update_class_options(dataset):
+    """Update the class dropdown options when the dataset changes.
+
+    Args:
+        dataset: "mitbih" or "ptbdb" dataset identifier.
+
+    Returns:
+        tuple: (options_list, default_value) for the class dropdown.
+    """
     data = load_ecg_precomputed()
     ds = data[dataset]
     class_names = list(ds["class_names"].values())
@@ -742,6 +756,15 @@ def update_class_options(dataset):
     Input("ecg-scale-toggle", "value"),
 )
 def update_class_distribution(dataset, scale):
+    """Generate grouped bar chart of class distribution for train/test splits.
+
+    Args:
+        dataset: "mitbih" or "ptbdb" dataset identifier.
+        scale: "linear" or "log" for the x-axis scale.
+
+    Returns:
+        plotly.graph_objects.Figure: Grouped bar chart of class counts.
+    """
     logger.info("ECG distribution callback: dataset=%s, scale=%s", dataset, scale)
     data = load_ecg_precomputed()
     ds = data[dataset]
@@ -776,6 +799,14 @@ def update_class_distribution(dataset, scale):
     Input("ecg-dataset-select", "value"),
 )
 def update_waveform_overlay(dataset):
+    """Generate mean waveform overlay with +/- 1 std deviation bands per class.
+
+    Args:
+        dataset: "mitbih" or "ptbdb" dataset identifier.
+
+    Returns:
+        plotly.graph_objects.Figure: Overlaid mean waveforms with std bands.
+    """
     data = load_ecg_precomputed()
     ds = data[dataset]
 
@@ -841,6 +872,18 @@ def update_waveform_overlay(dataset):
     State("ecg-dataset-select", "value"),
 )
 def update_sample_index(prev_clicks, next_clicks, class_name, current_idx, dataset):
+    """Navigate the waveform browser sample index via prev/next buttons.
+
+    Args:
+        prev_clicks: Number of clicks on the Prev button.
+        next_clicks: Number of clicks on the Next button.
+        class_name: Currently selected class name.
+        current_idx: Current sample index from the store.
+        dataset: "mitbih" or "ptbdb" dataset identifier.
+
+    Returns:
+        int: Updated sample index.
+    """
     from dash import ctx
 
     if not class_name:
@@ -876,6 +919,16 @@ def update_sample_index(prev_clicks, next_clicks, class_name, current_idx, datas
     Input("ecg-dataset-select", "value"),
 )
 def update_waveform_browser(sample_idx, class_name, dataset):
+    """Render a single ECG waveform sample in the browser panel.
+
+    Args:
+        sample_idx: Index of the sample to display.
+        class_name: Selected heartbeat class name.
+        dataset: "mitbih" or "ptbdb" dataset identifier.
+
+    Returns:
+        tuple: (figure, index_label) where index_label is e.g. "3 / 50".
+    """
     if not class_name:
         return go.Figure(), "0 / 0"
 
@@ -917,6 +970,14 @@ def update_waveform_browser(sample_idx, class_name, dataset):
     Input("ecg-dataset-select", "value"),
 )
 def update_features(dataset):
+    """Generate grouped bar chart comparing signal features across classes.
+
+    Args:
+        dataset: "mitbih" or "ptbdb" dataset identifier.
+
+    Returns:
+        plotly.graph_objects.Figure: Grouped bar chart of peak amplitude, energy, etc.
+    """
     data = load_ecg_precomputed()
     ds = data[dataset]
 
@@ -957,6 +1018,14 @@ def update_features(dataset):
     Input("ecg-dataset-select", "value"),
 )
 def update_correlation(dataset):
+    """Generate class similarity heatmap from mean waveform correlations.
+
+    Args:
+        dataset: "mitbih" or "ptbdb" dataset identifier.
+
+    Returns:
+        plotly.graph_objects.Figure: Annotated correlation matrix heatmap.
+    """
     data = load_ecg_precomputed()
     ds = data[dataset]
 
@@ -1168,6 +1237,17 @@ def build_playback_figure(waveform):
     prevent_initial_call=True,
 )
 def toggle_play_pause(n_clicks, is_playing, current_frame, waveform):
+    """Toggle between play and pause states for ECG playback animation.
+
+    Args:
+        n_clicks: Number of clicks on the play/pause button.
+        is_playing: Current playback state boolean.
+        current_frame: Current animation frame index.
+        waveform: Full waveform data list.
+
+    Returns:
+        tuple: (is_playing, frame, btn_text, btn_color, status_text, status_color).
+    """
     if not waveform:
         return False, 0, "Play", "success", "No data", "secondary"
     total = len(waveform)
@@ -1193,6 +1273,11 @@ def toggle_play_pause(n_clicks, is_playing, current_frame, waveform):
     prevent_initial_call=True,
 )
 def reset_playback(_n):
+    """Reset the ECG playback to initial state, clearing all drawn traces.
+
+    Returns:
+        tuple: Reset state values + patched figure clearing all trace data.
+    """
     window = 3 * SYNTH_BEAT_LEN
     patched = Patch()
     # Clear ECG trace and all marker traces
@@ -1219,6 +1304,11 @@ def reset_playback(_n):
     prevent_initial_call=True,
 )
 def reset_on_waveform_change(_waveform):
+    """Reset playback state when the underlying waveform data changes.
+
+    Returns:
+        tuple: Default stopped-state values for playback controls.
+    """
     return False, 0, "Play", "success", "Stopped", "secondary"
 
 
@@ -1232,6 +1322,15 @@ def reset_on_waveform_change(_waveform):
     Input("ecg-speed-select", "value"),
 )
 def control_interval_timer(is_playing, speed):
+    """Enable/disable the animation interval timer and set its speed.
+
+    Args:
+        is_playing: Current playback state boolean.
+        speed: Speed preset key ("slow", "normal", or "fast").
+
+    Returns:
+        tuple: (disabled, interval_ms) for the dcc.Interval component.
+    """
     ms = SPEED_PRESETS.get(speed, SPEED_PRESETS["normal"])
     return (not is_playing), ms
 
@@ -1323,6 +1422,14 @@ def scroll_playback(frame, waveform, fid_positions):
     Input("ecg-dataset-select", "value"),
 )
 def update_pca_scatter(dataset):
+    """Generate 2D PCA scatter plot of sampled waveforms colored by class.
+
+    Args:
+        dataset: "mitbih" or "ptbdb" dataset identifier.
+
+    Returns:
+        plotly.graph_objects.Figure: PCA embedding scatter with explained variance labels.
+    """
     data = load_ecg_precomputed()
     ds = data[dataset]
 
