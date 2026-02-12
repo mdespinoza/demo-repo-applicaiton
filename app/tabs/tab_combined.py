@@ -1,7 +1,10 @@
 """Tab 5: Combined Military Insights (cross-dataset analysis)."""
 
+import io
+import json
+
 import dash_bootstrap_components as dbc
-from dash import dcc, html, callback, Input, Output
+from dash import dcc, html, callback, Input, Output, no_update
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -64,6 +67,8 @@ def _build_combined_data():
 def layout():
     return html.Div(
         [
+            # --- Intermediate data store ---
+            dcc.Store(id="combined-filtered-store"),
             # --- NEW FILTER PANEL ---
             dbc.Row(
                 [
@@ -247,22 +252,16 @@ def layout():
     )
 
 
+# ---------------------------------------------------------------------------
+# Filter callback: builds combined data and writes to dcc.Store
+# ---------------------------------------------------------------------------
 @callback(
-    Output("combined-dual-map", "figure"),
-    Output("combined-scatter", "figure"),
-    Output("combined-butterfly", "figure"),
-    Output("combined-heatmap", "figure"),
-    Output("combined-ranking", "figure"),
-    Output("combined-temporal", "figure"),
-    Output("combined-radar", "figure"),
-    Output("combined-equip-per-base", "figure"),
-    Output("combined-quadrant", "figure"),
-    Output("combined-bubble", "figure"),
+    Output("combined-filtered-store", "data"),
     Input("combined-region-filter", "value"),
     Input("combined-min-bases", "value"),
 )
-def update_combined(regions, min_bases):
-    logger.info("Combined callback: regions=%s, min_bases=%s", regions, min_bases)
+def update_combined_store(regions, min_bases):
+    logger.info("Combined filter callback: regions=%s, min_bases=%s", regions, min_bases)
     combined, branch_by_state, equip_df, bases_df = _build_combined_data()
 
     # Apply filters
@@ -271,8 +270,72 @@ def update_combined(regions, min_bases):
     if min_bases and min_bases > 0:
         combined = combined[combined["base_count"] >= min_bases]
 
-    # Filter equipment/bases data to match selected states
     selected_states = set(combined["state_abbrev"].dropna())
+
+    # Pre-compute yearly equipment values for temporal chart
+    filtered_equip = equip_df[equip_df["State"].isin(selected_states)] if selected_states else equip_df
+    yearly_val = filtered_equip.dropna(subset=["Year"]).groupby("Year")["Acquisition Value"].sum().reset_index()
+    yearly_val.columns = ["Year", "Value"]
+
+    # Pre-compute regional aggregation for radar
+    region_agg = (
+        combined.groupby("region")
+        .agg(
+            equipment_value=("equipment_value", "sum"),
+            equipment_count=("equipment_count", "sum"),
+            base_count=("base_count", "sum"),
+            n_agencies=("n_agencies", "sum"),
+        )
+        .reset_index()
+    )
+
+    # Pre-compute heatmap data (branch vs category)
+    branch_states = branch_by_state.groupby("COMPONENT")["state_abbrev"].apply(set).to_dict()
+    if selected_states:
+        branch_states = {k: v & selected_states for k, v in branch_states.items()}
+
+    heat_data = []
+    for branch, br_states in branch_states.items():
+        branch_equip = equip_df[equip_df["State"].isin(br_states)]
+        cat_values = branch_equip.groupby("Category")["Acquisition Value"].sum()
+        for cat, val in cat_values.items():
+            heat_data.append({"Branch": branch, "Category": cat, "Value": val})
+
+    # Pre-compute base locations for map
+    bases_df_loc = bases_df.dropna(subset=["lat", "lon"]).copy()
+    bases_df_loc["state_abbrev"] = bases_df_loc["State Terr"].map(STATE_NAME_TO_ABBREV)
+    if selected_states:
+        bases_df_loc = bases_df_loc[bases_df_loc["state_abbrev"].isin(selected_states)]
+    bases_map_data = bases_df_loc[["lat", "lon", "Site Name"]].to_json(orient="split")
+
+    store_data = {
+        "combined": combined.to_json(date_format='iso', orient='split'),
+        "branch_by_state": branch_by_state.to_json(date_format='iso', orient='split'),
+        "selected_states": list(selected_states),
+        "yearly_val": yearly_val.to_json(orient="split"),
+        "region_agg": region_agg.to_json(orient="split"),
+        "heat_data": heat_data,
+        "bases_map": bases_map_data,
+    }
+    return json.dumps(store_data)
+
+
+# ---------------------------------------------------------------------------
+# Maps callback: dual map + temporal overlay (2 outputs)
+# ---------------------------------------------------------------------------
+@callback(
+    Output("combined-dual-map", "figure"),
+    Output("combined-temporal", "figure"),
+    Input("combined-filtered-store", "data"),
+)
+def update_combined_maps(store_data):
+    if store_data is None:
+        return no_update, no_update
+
+    data = json.loads(store_data)
+    combined = pd.read_json(io.StringIO(data["combined"]), orient='split')
+    yearly_val = pd.read_json(io.StringIO(data["yearly_val"]), orient='split')
+    bases_map = pd.read_json(io.StringIO(data["bases_map"]), orient='split')
 
     # 1. Dual-layer choropleth
     dual_fig = go.Figure()
@@ -288,17 +351,14 @@ def update_combined(regions, min_bases):
         )
     )
 
-    bases_for_map = bases_df.dropna(subset=["lat", "lon"])
-    if selected_states:
-        bases_for_map = bases_for_map[bases_for_map["state_abbrev"].isin(selected_states)]
     dual_fig.add_trace(
         go.Scattergeo(
-            lat=bases_for_map["lat"],
-            lon=bases_for_map["lon"],
+            lat=bases_map["lat"],
+            lon=bases_map["lon"],
             mode="markers",
             marker=dict(size=5, color=COLORS["danger"], opacity=0.6, symbol="circle"),
             name="Military Bases",
-            hovertext=bases_for_map["Site Name"],
+            hovertext=bases_map["Site Name"],
             hoverinfo="text",
         )
     )
@@ -322,142 +382,7 @@ def update_combined(regions, min_bases):
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
     )
 
-    # 2. Correlation scatter
-    combined_filtered = combined[(combined["base_count"] > 0) & (combined["equipment_value"] > 0)].copy()
-
-    scatter_fig = px.scatter(
-        combined_filtered,
-        x="base_count",
-        y="equipment_value",
-        size="equipment_count",
-        color="region",
-        color_discrete_map=REGION_COLORS,
-        hover_name="state_name",
-        trendline="ols",
-        template=PLOTLY_TEMPLATE,
-        labels={"base_count": "Number of Bases", "equipment_value": "Equipment Value ($)"},
-        size_max=40,
-    )
-    scatter_fig.update_layout(
-        margin=dict(l=0, r=10, t=10, b=0),
-        height=450,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-    )
-
-    # 3. Butterfly / paired bar
-    top20 = combined.nlargest(20, "equipment_value").sort_values("equipment_value", ascending=True)
-    butterfly_fig = go.Figure()
-    max_bases = top20["base_count"].max() if top20["base_count"].max() > 0 else 1
-    max_val = top20["equipment_value"].max() if top20["equipment_value"].max() > 0 else 1
-
-    butterfly_fig.add_trace(
-        go.Bar(
-            y=top20["state_name"],
-            x=-top20["base_count"] / max_bases * 100,
-            orientation="h",
-            name="Bases (normalized)",
-            marker_color=COLORS["secondary"],
-            hovertemplate="%{y}: %{customdata} bases<extra></extra>",
-            customdata=top20["base_count"].astype(int),
-        )
-    )
-    butterfly_fig.add_trace(
-        go.Bar(
-            y=top20["state_name"],
-            x=top20["equipment_value"] / max_val * 100,
-            orientation="h",
-            name="Equipment Value (normalized)",
-            marker_color=COLORS["success"],
-            hovertemplate="%{y}: $%{customdata:,.0f}<extra></extra>",
-            customdata=top20["equipment_value"],
-        )
-    )
-    butterfly_fig.update_layout(
-        barmode="relative",
-        template=PLOTLY_TEMPLATE,
-        xaxis=dict(title="<-- Bases | Equipment Value -->", showticklabels=False),
-        yaxis=dict(title=""),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-        margin=dict(l=0, r=10, t=10, b=0),
-        height=450,
-    )
-
-    # 4. Branch vs category heatmap
-    branch_states = branch_by_state.groupby("COMPONENT")["state_abbrev"].apply(set).to_dict()
-    # Filter to selected states if filters active
-    if selected_states:
-        branch_states = {k: v & selected_states for k, v in branch_states.items()}
-
-    heat_data = []
-    for branch, br_states in branch_states.items():
-        branch_equip = equip_df[equip_df["State"].isin(br_states)]
-        cat_values = branch_equip.groupby("Category")["Acquisition Value"].sum()
-        for cat, val in cat_values.items():
-            heat_data.append({"Branch": branch, "Category": cat, "Value": val})
-
-    if heat_data:
-        heat_df = pd.DataFrame(heat_data)
-        heat_pivot = heat_df.pivot_table(index="Branch", columns="Category", values="Value", fill_value=0)
-        top_cats = heat_df.groupby("Category")["Value"].sum().nlargest(10).index
-        heat_pivot = heat_pivot[[c for c in top_cats if c in heat_pivot.columns]]
-
-        heatmap_fig = go.Figure(
-            go.Heatmap(
-                z=np.log10(heat_pivot.values + 1),
-                x=heat_pivot.columns.tolist(),
-                y=heat_pivot.index.tolist(),
-                colorscale="YlOrRd",
-                colorbar=dict(title="Log10(Value)"),
-                hovertemplate="Branch: %{y}<br>Category: %{x}<br>Log Value: %{z:.2f}<extra></extra>",
-            )
-        )
-    else:
-        heatmap_fig = go.Figure()
-
-    heatmap_fig.update_layout(
-        template=PLOTLY_TEMPLATE,
-        xaxis=dict(tickangle=-45),
-        margin=dict(l=0, r=10, t=10, b=80),
-        height=450,
-    )
-
-    # 5. Combined ranking
-    combined_for_rank = combined[(combined["base_count"] > 0) | (combined["equipment_value"] > 0)].copy()
-    if len(combined_for_rank) > 0:
-        max_b = combined_for_rank["base_count"].max()
-        max_v = combined_for_rank["equipment_value"].max()
-        combined_for_rank["norm_bases"] = combined_for_rank["base_count"] / max_b * 100 if max_b > 0 else 0
-        combined_for_rank["norm_value"] = combined_for_rank["equipment_value"] / max_v * 100 if max_v > 0 else 0
-        combined_for_rank["composite_score"] = (
-            0.5 * combined_for_rank["norm_bases"] + 0.5 * combined_for_rank["norm_value"]
-        )
-        combined_for_rank = combined_for_rank.nlargest(25, "composite_score").sort_values(
-            "composite_score", ascending=True
-        )
-
-        ranking_fig = px.bar(
-            combined_for_rank,
-            x="composite_score",
-            y="state_name",
-            orientation="h",
-            template=PLOTLY_TEMPLATE,
-            color="region",
-            color_discrete_map=REGION_COLORS,
-            labels={"composite_score": "Composite Score", "state_name": ""},
-        )
-    else:
-        ranking_fig = go.Figure()
-
-    ranking_fig.update_layout(
-        margin=dict(l=0, r=10, t=10, b=0),
-        height=450,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-    )
-
-    # --- NEW CHART C3: Temporal Equipment Overlay ---
-    filtered_equip = equip_df[equip_df["State"].isin(selected_states)] if selected_states else equip_df
-    yearly_val = filtered_equip.dropna(subset=["Year"]).groupby("Year")["Acquisition Value"].sum().reset_index()
-    yearly_val.columns = ["Year", "Value"]
+    # --- Temporal Equipment Overlay ---
     total_bases = combined["base_count"].sum()
 
     temporal_fig = make_subplots(specs=[[{"secondary_y": True}]])
@@ -491,79 +416,48 @@ def update_combined(regions, min_bases):
     temporal_fig.update_yaxes(title_text="Acquisition Value ($)", secondary_y=False)
     temporal_fig.update_yaxes(title_text="Base Count", secondary_y=True)
 
-    # --- NEW CHART C1: Regional Comparison Radar ---
-    region_agg = (
-        combined.groupby("region")
-        .agg(
-            equipment_value=("equipment_value", "sum"),
-            equipment_count=("equipment_count", "sum"),
-            base_count=("base_count", "sum"),
-            n_agencies=("n_agencies", "sum"),
-        )
-        .reset_index()
-    )
+    return dual_fig, temporal_fig
 
-    radar_fig = go.Figure()
-    categories_radar = ["Equipment Value", "Equipment Count", "Base Count", "Agencies"]
 
-    if len(region_agg) > 0:
-        for _, row in region_agg.iterrows():
-            vals = [row["equipment_value"], row["equipment_count"], row["base_count"], row["n_agencies"]]
-            # Normalize each to 0-100 within the radar
-            max_vals = region_agg[["equipment_value", "equipment_count", "base_count", "n_agencies"]].max()
-            norm_vals = []
-            for v, m in zip(vals, max_vals):
-                norm_vals.append(v / m * 100 if m > 0 else 0)
-            norm_vals.append(norm_vals[0])  # close the polygon
+# ---------------------------------------------------------------------------
+# Scatter callback: scatter + quadrant + bubble (3 outputs)
+# ---------------------------------------------------------------------------
+@callback(
+    Output("combined-scatter", "figure"),
+    Output("combined-quadrant", "figure"),
+    Output("combined-bubble", "figure"),
+    Input("combined-filtered-store", "data"),
+)
+def update_combined_scatter(store_data):
+    if store_data is None:
+        return no_update, no_update, no_update
 
-            radar_fig.add_trace(
-                go.Scatterpolar(
-                    r=norm_vals,
-                    theta=categories_radar + [categories_radar[0]],
-                    fill="toself",
-                    name=row["region"],
-                    line=dict(color=REGION_COLORS.get(row["region"], COLORS["muted"])),
-                    opacity=0.7,
-                )
-            )
+    data = json.loads(store_data)
+    combined = pd.read_json(io.StringIO(data["combined"]), orient='split')
 
-    radar_fig.update_layout(
+    # 2. Correlation scatter
+    combined_filtered = combined[(combined["base_count"] > 0) & (combined["equipment_value"] > 0)].copy()
+
+    scatter_fig = px.scatter(
+        combined_filtered,
+        x="base_count",
+        y="equipment_value",
+        size="equipment_count",
+        color="region",
+        color_discrete_map=REGION_COLORS,
+        hover_name="state_name",
+        trendline="ols",
         template=PLOTLY_TEMPLATE,
-        polar=dict(
-            bgcolor="rgba(0,0,0,0)",
-            radialaxis=dict(visible=True, range=[0, 100], gridcolor="rgba(99,125,175,0.2)"),
-            angularaxis=dict(gridcolor="rgba(99,125,175,0.2)"),
-        ),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-        margin=dict(l=40, r=40, t=30, b=20),
-        height=450,
+        labels={"base_count": "Number of Bases", "equipment_value": "Equipment Value ($)"},
+        size_max=40,
     )
-
-    # --- NEW CHART C2: Equipment-per-Base Ratio ---
-    epb = combined[combined["base_count"] > 0].copy()
-    epb["equip_per_base"] = epb["equipment_value"] / epb["base_count"]
-    epb = epb.nlargest(25, "equip_per_base").sort_values("equip_per_base", ascending=True)
-
-    if len(epb) > 0:
-        epb_fig = px.bar(
-            epb,
-            x="equip_per_base",
-            y="state_name",
-            orientation="h",
-            template=PLOTLY_TEMPLATE,
-            color="region",
-            color_discrete_map=REGION_COLORS,
-            labels={"equip_per_base": "Equipment Value / Base", "state_name": ""},
-        )
-    else:
-        epb_fig = go.Figure()
-    epb_fig.update_layout(
+    scatter_fig.update_layout(
         margin=dict(l=0, r=10, t=10, b=0),
         height=450,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
     )
 
-    # --- NEW CHART C4: Quadrant Analysis ---
+    # --- Quadrant Analysis ---
     quad_df = combined[(combined["base_count"] > 0) & (combined["equipment_value"] > 0)].copy()
 
     if len(quad_df) > 0:
@@ -604,7 +498,7 @@ def update_combined(regions, min_bases):
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
     )
 
-    # --- NEW CHART C5: Agency Reach Bubble Chart ---
+    # --- Agency Reach Bubble Chart ---
     bubble_df = combined[(combined["n_agencies"] > 0) & (combined["base_count"] > 0)].copy()
 
     if len(bubble_df) > 0:
@@ -633,15 +527,202 @@ def update_combined(regions, min_bases):
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
     )
 
-    return (
-        dual_fig,
-        scatter_fig,
-        butterfly_fig,
-        heatmap_fig,
-        ranking_fig,
-        temporal_fig,
-        radar_fig,
-        epb_fig,
-        quadrant_fig,
-        bubble_fig,
+    return scatter_fig, quadrant_fig, bubble_fig
+
+
+# ---------------------------------------------------------------------------
+# Bars callback: butterfly + equip-per-base + ranking (3 outputs)
+# ---------------------------------------------------------------------------
+@callback(
+    Output("combined-butterfly", "figure"),
+    Output("combined-equip-per-base", "figure"),
+    Output("combined-ranking", "figure"),
+    Input("combined-filtered-store", "data"),
+)
+def update_combined_bars(store_data):
+    if store_data is None:
+        return no_update, no_update, no_update
+
+    data = json.loads(store_data)
+    combined = pd.read_json(io.StringIO(data["combined"]), orient='split')
+
+    # 3. Butterfly / paired bar
+    top20 = combined.nlargest(20, "equipment_value").sort_values("equipment_value", ascending=True)
+    butterfly_fig = go.Figure()
+    max_bases = top20["base_count"].max() if top20["base_count"].max() > 0 else 1
+    max_val = top20["equipment_value"].max() if top20["equipment_value"].max() > 0 else 1
+
+    butterfly_fig.add_trace(
+        go.Bar(
+            y=top20["state_name"],
+            x=-top20["base_count"] / max_bases * 100,
+            orientation="h",
+            name="Bases (normalized)",
+            marker_color=COLORS["secondary"],
+            hovertemplate="%{y}: %{customdata} bases<extra></extra>",
+            customdata=top20["base_count"].astype(int),
+        )
     )
+    butterfly_fig.add_trace(
+        go.Bar(
+            y=top20["state_name"],
+            x=top20["equipment_value"] / max_val * 100,
+            orientation="h",
+            name="Equipment Value (normalized)",
+            marker_color=COLORS["success"],
+            hovertemplate="%{y}: $%{customdata:,.0f}<extra></extra>",
+            customdata=top20["equipment_value"],
+        )
+    )
+    butterfly_fig.update_layout(
+        barmode="relative",
+        template=PLOTLY_TEMPLATE,
+        xaxis=dict(title="<-- Bases | Equipment Value -->", showticklabels=False),
+        yaxis=dict(title=""),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        margin=dict(l=0, r=10, t=10, b=0),
+        height=450,
+    )
+
+    # --- Equipment-per-Base Ratio ---
+    epb = combined[combined["base_count"] > 0].copy()
+    epb["equip_per_base"] = epb["equipment_value"] / epb["base_count"]
+    epb = epb.nlargest(25, "equip_per_base").sort_values("equip_per_base", ascending=True)
+
+    if len(epb) > 0:
+        epb_fig = px.bar(
+            epb,
+            x="equip_per_base",
+            y="state_name",
+            orientation="h",
+            template=PLOTLY_TEMPLATE,
+            color="region",
+            color_discrete_map=REGION_COLORS,
+            labels={"equip_per_base": "Equipment Value / Base", "state_name": ""},
+        )
+    else:
+        epb_fig = go.Figure()
+    epb_fig.update_layout(
+        margin=dict(l=0, r=10, t=10, b=0),
+        height=450,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    )
+
+    # 5. Combined ranking
+    combined_for_rank = combined[(combined["base_count"] > 0) | (combined["equipment_value"] > 0)].copy()
+    if len(combined_for_rank) > 0:
+        max_b = combined_for_rank["base_count"].max()
+        max_v = combined_for_rank["equipment_value"].max()
+        combined_for_rank["norm_bases"] = combined_for_rank["base_count"] / max_b * 100 if max_b > 0 else 0
+        combined_for_rank["norm_value"] = combined_for_rank["equipment_value"] / max_v * 100 if max_v > 0 else 0
+        combined_for_rank["composite_score"] = (
+            0.5 * combined_for_rank["norm_bases"] + 0.5 * combined_for_rank["norm_value"]
+        )
+        combined_for_rank = combined_for_rank.nlargest(25, "composite_score").sort_values(
+            "composite_score", ascending=True
+        )
+
+        ranking_fig = px.bar(
+            combined_for_rank,
+            x="composite_score",
+            y="state_name",
+            orientation="h",
+            template=PLOTLY_TEMPLATE,
+            color="region",
+            color_discrete_map=REGION_COLORS,
+            labels={"composite_score": "Composite Score", "state_name": ""},
+        )
+    else:
+        ranking_fig = go.Figure()
+
+    ranking_fig.update_layout(
+        margin=dict(l=0, r=10, t=10, b=0),
+        height=450,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    )
+
+    return butterfly_fig, epb_fig, ranking_fig
+
+
+# ---------------------------------------------------------------------------
+# Advanced callback: heatmap + radar (2 outputs)
+# ---------------------------------------------------------------------------
+@callback(
+    Output("combined-heatmap", "figure"),
+    Output("combined-radar", "figure"),
+    Input("combined-filtered-store", "data"),
+)
+def update_combined_advanced(store_data):
+    if store_data is None:
+        return no_update, no_update
+
+    data = json.loads(store_data)
+    heat_data = data["heat_data"]
+    region_agg = pd.read_json(io.StringIO(data["region_agg"]), orient='split')
+
+    # 4. Branch vs category heatmap (using pre-computed heat_data)
+    if heat_data:
+        heat_df = pd.DataFrame(heat_data)
+        heat_pivot = heat_df.pivot_table(index="Branch", columns="Category", values="Value", fill_value=0)
+        top_cats = heat_df.groupby("Category")["Value"].sum().nlargest(10).index
+        heat_pivot = heat_pivot[[c for c in top_cats if c in heat_pivot.columns]]
+
+        heatmap_fig = go.Figure(
+            go.Heatmap(
+                z=np.log10(heat_pivot.values + 1),
+                x=heat_pivot.columns.tolist(),
+                y=heat_pivot.index.tolist(),
+                colorscale="YlOrRd",
+                colorbar=dict(title="Log10(Value)"),
+                hovertemplate="Branch: %{y}<br>Category: %{x}<br>Log Value: %{z:.2f}<extra></extra>",
+            )
+        )
+    else:
+        heatmap_fig = go.Figure()
+
+    heatmap_fig.update_layout(
+        template=PLOTLY_TEMPLATE,
+        xaxis=dict(tickangle=-45),
+        margin=dict(l=0, r=10, t=10, b=80),
+        height=450,
+    )
+
+    # --- Regional Comparison Radar (using pre-computed region_agg) ---
+
+    radar_fig = go.Figure()
+    categories_radar = ["Equipment Value", "Equipment Count", "Base Count", "Agencies"]
+
+    if len(region_agg) > 0:
+        for _, row in region_agg.iterrows():
+            vals = [row["equipment_value"], row["equipment_count"], row["base_count"], row["n_agencies"]]
+            # Normalize each to 0-100 within the radar
+            max_vals = region_agg[["equipment_value", "equipment_count", "base_count", "n_agencies"]].max()
+            norm_vals = []
+            for v, m in zip(vals, max_vals):
+                norm_vals.append(v / m * 100 if m > 0 else 0)
+            norm_vals.append(norm_vals[0])  # close the polygon
+
+            radar_fig.add_trace(
+                go.Scatterpolar(
+                    r=norm_vals,
+                    theta=categories_radar + [categories_radar[0]],
+                    fill="toself",
+                    name=row["region"],
+                    line=dict(color=REGION_COLORS.get(row["region"], COLORS["muted"])),
+                    opacity=0.7,
+                )
+            )
+
+    radar_fig.update_layout(
+        template=PLOTLY_TEMPLATE,
+        polar=dict(
+            bgcolor="rgba(0,0,0,0)",
+            radialaxis=dict(visible=True, range=[0, 100], gridcolor="rgba(99,125,175,0.2)"),
+            angularaxis=dict(gridcolor="rgba(99,125,175,0.2)"),
+        ),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        margin=dict(l=40, r=40, t=30, b=20),
+        height=450,
+    )
+
+    return heatmap_fig, radar_fig

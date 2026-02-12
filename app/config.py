@@ -14,6 +14,9 @@ HEALTHCARE_CSV = os.path.join(DATASET_DIR, "healthcare_documentation", "Healthca
 
 # Cache paths
 ECG_CACHE = os.path.join(CACHE_DIR, "ecg_precomputed.json")
+EQUIPMENT_CACHE = os.path.join(CACHE_DIR, "equipment.parquet")
+BASES_CACHE = os.path.join(CACHE_DIR, "bases.parquet")
+HEALTHCARE_CACHE = os.path.join(CACHE_DIR, "healthcare.parquet")
 
 # Color palette — modern dark theme
 COLORS = {

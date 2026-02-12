@@ -13,6 +13,9 @@ from app.config import (
     HEALTHCARE_CSV,
     CACHE_DIR,
     ECG_CACHE,
+    EQUIPMENT_CACHE,
+    BASES_CACHE,
+    HEALTHCARE_CACHE,
     get_equipment_category,
 )
 from app.logging_config import get_logger
@@ -23,6 +26,16 @@ logger = get_logger(__name__)
 csv.field_size_limit(sys.maxsize)
 
 _cache = {}
+
+
+def _cache_is_fresh(cache_path, source_path):
+    """Check if a cache file exists and is newer than its source CSV."""
+    if not os.path.exists(cache_path):
+        return False
+    if not os.path.exists(source_path):
+        return False
+    return os.path.getmtime(cache_path) >= os.path.getmtime(source_path)
+
 
 # Empty fallback structures for error paths
 _EMPTY_ECG = {
@@ -65,9 +78,30 @@ def load_equipment():
     if "equipment" in _cache:
         return _cache["equipment"]
 
+    # Try persistent Parquet cache first
+    if _cache_is_fresh(EQUIPMENT_CACHE, EQUIPMENT_CSV):
+        try:
+            logger.info("Loading equipment from Parquet cache: %s", EQUIPMENT_CACHE)
+            df = pd.read_parquet(EQUIPMENT_CACHE)
+            _cache["equipment"] = df
+            return df
+        except Exception:
+            logger.warning("Failed to read equipment cache, falling back to CSV")
+
     try:
         logger.info("Loading equipment data from %s", EQUIPMENT_CSV)
-        df = pd.read_csv(EQUIPMENT_CSV, low_memory=False)
+        df = pd.read_csv(
+            EQUIPMENT_CSV,
+            low_memory=False,
+            dtype={
+                "State": "category",
+                "Agency Name": str,
+                "NSN": str,
+                "Item Name": str,
+                "DEMIL Code": str,
+                "Station Type": str,
+            },
+        )
 
         validate_dataframe(
             df,
@@ -90,12 +124,46 @@ def load_equipment():
         df["Quantity"] = pd.to_numeric(df["Quantity"], errors="coerce").fillna(0).astype(int)
         df["Ship Date"] = pd.to_datetime(df["Ship Date"], errors="coerce")
         df["Year"] = df["Ship Date"].dt.year
-        df["Category"] = df["NSN"].apply(get_equipment_category)
-        df["DEMIL Code"] = df["DEMIL Code"].fillna("Unknown").astype(str).str.strip()
-        df["Station Type"] = df["Station Type"].fillna("Unknown").astype(str).str.strip()
+        # Vectorized category mapping using NSN prefix lookup
+        nsn_prefix = df["NSN"].str[:2].fillna("")
+        category_map = {
+            "10": "Weapons & Firearms", "11": "Weapons & Firearms",
+            "12": "Weapons & Firearms", "13": "Ammunition & Explosives",
+            "14": "Weapons & Firearms", "15": "Aircraft & Parts",
+            "16": "Aircraft & Parts", "17": "Aircraft & Parts",
+            "19": "Ships & Marine", "20": "Ships & Marine",
+            "22": "Vehicles & Transport", "23": "Vehicles & Transport",
+            "24": "Vehicles & Transport", "25": "Vehicles & Transport",
+            "26": "Vehicles & Transport", "28": "Engines & Power",
+            "29": "Engines & Power", "34": "Industrial Equipment",
+            "35": "Industrial Equipment", "36": "Industrial Equipment",
+            "37": "Industrial Equipment", "38": "Construction Equipment",
+            "39": "Construction Equipment", "42": "Safety & Fire Equipment",
+            "49": "Maintenance Equipment", "51": "Tools", "52": "Tools",
+            "53": "Tools", "58": "Communications & Electronics",
+            "59": "Communications & Electronics", "60": "Communications & Electronics",
+            "61": "Communications & Electronics", "65": "Medical Equipment",
+            "66": "Scientific Equipment", "67": "Imaging Equipment",
+            "68": "Chemicals", "69": "Training & Simulation",
+            "70": "IT & Computing", "71": "Furniture & Supplies",
+            "72": "Furniture & Supplies", "73": "Furniture & Supplies",
+            "74": "Office Equipment", "75": "Office Equipment",
+            "84": "Clothing & Textiles", "83": "Clothing & Textiles",
+            "85": "Personal Gear",
+        }
+        df["Category"] = nsn_prefix.map(category_map).fillna("Other").astype("category")
+        df["DEMIL Code"] = df["DEMIL Code"].fillna("Unknown").str.strip()
+        df["Station Type"] = df["Station Type"].fillna("Unknown").str.strip()
 
         logger.info("Equipment data loaded: %d rows", len(df))
         _cache["equipment"] = df
+        # Persist to Parquet cache
+        try:
+            os.makedirs(CACHE_DIR, exist_ok=True)
+            df.to_parquet(EQUIPMENT_CACHE, index=False)
+            logger.info("Equipment cache written: %s", EQUIPMENT_CACHE)
+        except Exception:
+            logger.warning("Failed to write equipment cache")
         return df
 
     except FileNotFoundError:
@@ -136,9 +204,31 @@ def load_bases():
     if "bases" in _cache:
         return _cache["bases"]
 
+    # Try persistent Parquet cache first
+    if _cache_is_fresh(BASES_CACHE, BASES_CSV):
+        try:
+            logger.info("Loading bases from Parquet cache: %s", BASES_CACHE)
+            df = pd.read_parquet(BASES_CACHE)
+            _cache["bases"] = df
+            return df
+        except Exception:
+            logger.warning("Failed to read bases cache, falling back to CSV")
+
     try:
         logger.info("Loading bases data from %s", BASES_CSV)
-        df = pd.read_csv(BASES_CSV, sep=";", encoding="utf-8-sig", engine="python")
+        df = pd.read_csv(
+            BASES_CSV,
+            sep=";",
+            encoding="utf-8-sig",
+            engine="python",
+            dtype={
+                "COMPONENT": str,
+                "Site Name": str,
+                "State Terr": str,
+                "Oper Stat": str,
+                "Joint Base": str,
+            },
+        )
 
         validate_dataframe(
             df,
@@ -146,21 +236,14 @@ def load_bases():
             name="Bases",
         )
 
-        # Parse Geo Point to lat/lon
-        def parse_geo_point(gp):
-            if pd.isna(gp) or not isinstance(gp, str):
-                return pd.Series({"lat": None, "lon": None})
-            parts = gp.split(",")
-            if len(parts) == 2:
-                try:
-                    return pd.Series({"lat": float(parts[0].strip()), "lon": float(parts[1].strip())})
-                except ValueError:
-                    return pd.Series({"lat": None, "lon": None})
-            return pd.Series({"lat": None, "lon": None})
-
-        coords = df["Geo Point"].apply(parse_geo_point)
-        df["lat"] = coords["lat"]
-        df["lon"] = coords["lon"]
+        # Vectorized Geo Point parsing (replaces row-wise .apply())
+        geo = df["Geo Point"].dropna().str.split(",", expand=True)
+        if len(geo.columns) >= 2:
+            df["lat"] = pd.to_numeric(geo[0].str.strip(), errors="coerce")
+            df["lon"] = pd.to_numeric(geo[1].str.strip(), errors="coerce")
+        else:
+            df["lat"] = np.nan
+            df["lon"] = np.nan
         df = df.dropna(subset=["lat", "lon"]).copy()
 
         # Normalize component names
@@ -175,6 +258,13 @@ def load_bases():
 
         logger.info("Bases data loaded: %d rows", len(df))
         _cache["bases"] = df
+        # Persist to Parquet cache
+        try:
+            os.makedirs(CACHE_DIR, exist_ok=True)
+            df.to_parquet(BASES_CACHE, index=False)
+            logger.info("Bases cache written: %s", BASES_CACHE)
+        except Exception:
+            logger.warning("Failed to write bases cache")
         return df
 
     except FileNotFoundError:
@@ -212,9 +302,29 @@ def load_healthcare():
     if "healthcare" in _cache:
         return _cache["healthcare"]
 
+    # Try persistent Parquet cache first
+    if _cache_is_fresh(HEALTHCARE_CACHE, HEALTHCARE_CSV):
+        try:
+            logger.info("Loading healthcare from Parquet cache: %s", HEALTHCARE_CACHE)
+            df = pd.read_parquet(HEALTHCARE_CACHE)
+            _cache["healthcare"] = df
+            return df
+        except Exception:
+            logger.warning("Failed to read healthcare cache, falling back to CSV")
+
     try:
         logger.info("Loading healthcare data from %s", HEALTHCARE_CSV)
-        df = pd.read_csv(HEALTHCARE_CSV, low_memory=False)
+        df = pd.read_csv(
+            HEALTHCARE_CSV,
+            low_memory=False,
+            dtype={
+                "medical_specialty": "category",
+                "sample_name": str,
+                "description": str,
+                "keywords": str,
+                "cleaned_transcription": str,
+            },
+        )
 
         validate_dataframe(
             df,
@@ -229,6 +339,13 @@ def load_healthcare():
 
         logger.info("Healthcare data loaded: %d rows", len(df))
         _cache["healthcare"] = df
+        # Persist to Parquet cache
+        try:
+            os.makedirs(CACHE_DIR, exist_ok=True)
+            df.to_parquet(HEALTHCARE_CACHE, index=False)
+            logger.info("Healthcare cache written: %s", HEALTHCARE_CACHE)
+        except Exception:
+            logger.warning("Failed to write healthcare cache")
         return df
 
     except FileNotFoundError:
