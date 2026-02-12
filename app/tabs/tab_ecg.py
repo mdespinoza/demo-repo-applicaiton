@@ -548,8 +548,14 @@ def layout():
                                             target="ecg-fiducial-info-icon",
                                             placement="right",
                                         ),
-                                        dcc.Graph(id="ecg-fiducial-graph", style={"height": "280px"}),
-                                        html.Div(id="ecg-fiducial-table"),
+                                        dcc.Loading(
+                                            dcc.Graph(id="ecg-fiducial-graph", style={"height": "280px"}),
+                                            type="circle", color="#38BDF8",
+                                        ),
+                                        dcc.Loading(
+                                            html.Div(id="ecg-fiducial-table"),
+                                            type="circle", color="#38BDF8",
+                                        ),
                                     ]
                                 ),
                                 className="chart-card",

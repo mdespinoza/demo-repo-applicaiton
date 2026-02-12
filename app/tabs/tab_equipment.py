@@ -4,7 +4,7 @@ import io
 import json
 
 import dash_bootstrap_components as dbc
-from dash import dcc, html, callback, Input, Output, no_update
+from dash import dcc, html, callback, Input, Output, State, no_update
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
@@ -33,8 +33,9 @@ def layout():
 
     return html.Div(
         [
-            # Filtered data store
+            # Filtered data store + CSV download
             dcc.Store(id="equip-filtered-store"),
+            dcc.Download(id="equip-download-csv"),
             # Filters
             dbc.Row(
                 [
@@ -79,9 +80,33 @@ def layout():
                     ),
                 ],
                 className="filter-panel",
+                role="search",
+                **{"aria-label": "Equipment data filters"},
+            ),
+            # Export button
+            dbc.Row(
+                dbc.Col(
+                    html.Button(
+                        [
+                            html.I(className="bi bi-download me-2",
+                                   **{"aria-hidden": "true"}),
+                            "Export Filtered Data (CSV)",
+                        ],
+                        id="equip-export-btn",
+                        className="btn btn-outline-info btn-sm",
+                        **{"aria-label": "Download filtered equipment data as CSV"},
+                    ),
+                    width="auto",
+                ),
+                className="mb-2",
+                justify="end",
             ),
             # KPI cards
-            dbc.Row(id="equip-kpis"),
+            dcc.Loading(
+                dbc.Row(id="equip-kpis"),
+                type="circle",
+                color="#38BDF8",
+            ),
             # --- Temporal + Top Equipment ---
             dbc.Row(
                 [
@@ -832,3 +857,29 @@ def update_equip_categories(store_data):
     )
 
     return treemap_fig, demil_fig
+
+
+# ---------------------------------------------------------------------------
+# 7. CSV Export callback
+# ---------------------------------------------------------------------------
+@callback(
+    Output("equip-download-csv", "data"),
+    Input("equip-export-btn", "n_clicks"),
+    State("equip-filtered-store", "data"),
+    prevent_initial_call=True,
+)
+def export_equipment_csv(n_clicks, store_data):
+    """Export currently filtered equipment data as a CSV download.
+
+    Args:
+        n_clicks: Number of times the export button was clicked.
+        store_data: JSON string from equip-filtered-store.
+
+    Returns:
+        dict: Download payload for dcc.Download component.
+    """
+    if not store_data:
+        return no_update
+    data = json.loads(store_data)
+    df = pd.read_json(io.StringIO(data["df"]), orient="split")
+    return dcc.send_data_frame(df.to_csv, "equipment_transfers.csv", index=False)

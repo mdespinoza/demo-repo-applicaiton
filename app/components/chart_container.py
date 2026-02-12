@@ -3,6 +3,18 @@
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 
+# Default Plotly graph config with enhanced PNG export
+GRAPH_CONFIG = {
+    "toImageButtonOptions": {
+        "format": "png",
+        "filename": "chart_export",
+        "height": 600,
+        "width": 1200,
+        "scale": 2,
+    },
+    "displaylogo": False,
+}
+
 
 def chart_container(graph_id, title=None, height=450, info=None):
     """Wrap a dcc.Graph in a styled card with optional title and loading spinner.
@@ -16,6 +28,7 @@ def chart_container(graph_id, title=None, height=450, info=None):
     Returns:
         dbc.Card: Bootstrap card containing the titled graph with loading indicator.
     """
+    config = {**GRAPH_CONFIG, "toImageButtonOptions": {**GRAPH_CONFIG["toImageButtonOptions"], "filename": graph_id}}
     children = []
     if title:
         if info:
@@ -32,9 +45,14 @@ def chart_container(graph_id, title=None, height=450, info=None):
             children.append(html.H5(title, className="chart-title"))
     children.append(
         dcc.Loading(
-            dcc.Graph(id=graph_id, style={"height": f"{height}px"}),
+            dcc.Graph(id=graph_id, style={"height": f"{height}px"}, config=config),
             type="circle",
             color="#38BDF8",
         )
     )
-    return dbc.Card(dbc.CardBody(children), className="chart-card")
+    aria_label = f"{title} chart" if title else "Data visualization"
+    return html.Div(
+        dbc.Card(dbc.CardBody(children), className="chart-card"),
+        role="figure",
+        **{"aria-label": aria_label},
+    )

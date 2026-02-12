@@ -377,6 +377,11 @@ body {
     border-right-color: transparent !important;
 }
 
+._dash-loading-callback {
+    opacity: 0.4;
+    transition: opacity 0.2s ease;
+}
+
 /* ---------- Cards (Bootstrap override) ---------- */
 .card {
     background-color: var(--bg-card-solid);
@@ -442,6 +447,73 @@ body {
     color: var(--accent-blue);
     font-size: 1.1rem;
     vertical-align: middle;
+}
+
+/* ---------- Export Button ---------- */
+.btn-outline-info {
+    border-color: var(--accent-blue) !important;
+    color: var(--accent-blue) !important;
+    background: transparent !important;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-info:hover {
+    background: rgba(56, 189, 248, 0.1) !important;
+    color: var(--accent-blue) !important;
+    border-color: var(--accent-blue) !important;
+}
+
+/* ---------- Skip to Content (Accessibility) ---------- */
+.skip-link {
+    position: absolute;
+    top: -100px;
+    left: 0;
+    background: var(--accent-blue);
+    color: #0B0F19;
+    padding: 8px 16px;
+    z-index: 1000;
+    font-weight: 700;
+    font-size: 0.85rem;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* ---------- Keyboard Focus Styles ---------- */
+*:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+.nav-tabs .nav-link:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: -2px;
+    background: rgba(56, 189, 248, 0.05);
+}
+
+.btn:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--glow-blue);
+}
+
+/* ---------- Screen Reader Only ---------- */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
 }
 
 /* ---------- Responsive ---------- */
