@@ -23,6 +23,13 @@ app = dash.Dash(
 
 server = app.server
 
+# Register monitoring endpoints on the Flask server
+from app.health import register_health_endpoint  # noqa: E402
+from app.metrics import register_metrics_endpoint  # noqa: E402
+
+register_health_endpoint(server)
+register_metrics_endpoint(server)
+
 # App layout
 app.layout = html.Div(
     [
@@ -97,8 +104,10 @@ def render_tab(active_tab):
 if __name__ == "__main__":
     from app.logging_config import setup_logging
     from app.settings import DASH_HOST, DASH_PORT, DASH_DEBUG
+    from app.error_tracking import init_error_tracking
 
     logger = setup_logging()
+    init_error_tracking()
     logger.info("Starting Tactical Command Center...")
     logger.info("Open http://%s:%s in your browser", DASH_HOST, DASH_PORT)
     app.run(debug=DASH_DEBUG, host=DASH_HOST, port=DASH_PORT)
