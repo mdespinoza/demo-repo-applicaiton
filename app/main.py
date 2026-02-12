@@ -2,7 +2,7 @@
 
 import sys
 import os
-from urllib.parse import parse_qs, urlencode
+from urllib.parse import parse_qs
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -46,6 +46,7 @@ app.layout = html.Div(
         html.A("Skip to main content", href="#tab-content", className="skip-link"),
         # URL state persistence
         dcc.Location(id="url", refresh=False),
+        html.Div(id="url-sync-dummy", style={"display": "none"}),
         # Header
         html.Header(
             [
@@ -123,15 +124,22 @@ def set_tab_from_url(search):
     return no_update
 
 
-@app.callback(
-    Output("url", "search"),
+app.clientside_callback(
+    """
+    function(active_tab) {
+        if (active_tab) {
+            var newSearch = '?tab=' + encodeURIComponent(active_tab);
+            if (window.location.search !== newSearch) {
+                window.history.replaceState({}, '', newSearch);
+            }
+        }
+        return '';
+    }
+    """,
+    Output("url-sync-dummy", "children"),
     Input("main-tabs", "active_tab"),
+    prevent_initial_call=True,
 )
-def update_url_from_tab(active_tab):
-    """Write the active tab to the URL query string for shareability."""
-    if active_tab:
-        return "?" + urlencode({"tab": active_tab})
-    return no_update
 
 
 @app.callback(
