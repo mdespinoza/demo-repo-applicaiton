@@ -48,6 +48,7 @@ DASH_DEBUG = os.environ.get("DASH_DEBUG", str(DASH_ENV == "development")).lower(
 
 # Logging
 DASH_LOG_LEVEL = os.environ.get("DASH_LOG_LEVEL", "DEBUG" if DASH_ENV == "development" else "WARNING")
+DASH_LOG_FORMAT = os.environ.get("DASH_LOG_FORMAT", "text" if DASH_ENV == "development" else "json")
 
 # Gunicorn (used in production via gunicorn.conf.py or CLI)
 GUNICORN_WORKERS = int(os.environ.get("GUNICORN_WORKERS", "4"))

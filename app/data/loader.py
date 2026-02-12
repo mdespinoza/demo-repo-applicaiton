@@ -18,6 +18,7 @@ from app.config import (
     HEALTHCARE_CACHE,
 )
 from app.logging_config import get_logger
+from app import metrics
 
 logger = get_logger(__name__)
 
@@ -75,19 +76,24 @@ def load_equipment():
         pd.DataFrame: Processed equipment data, or empty DataFrame on error.
     """
     if "equipment" in _cache:
+        metrics.increment("cache_hits", labels={"dataset": "equipment", "layer": "memory"})
         return _cache["equipment"]
 
     # Try persistent Parquet cache first
     if _cache_is_fresh(EQUIPMENT_CACHE, EQUIPMENT_CSV):
         try:
             logger.info("Loading equipment from Parquet cache: %s", EQUIPMENT_CACHE)
-            df = pd.read_parquet(EQUIPMENT_CACHE)
+            with metrics.timer("data_load_seconds", {"dataset": "equipment", "source": "parquet"}):
+                df = pd.read_parquet(EQUIPMENT_CACHE)
+            metrics.increment("cache_hits", labels={"dataset": "equipment", "layer": "parquet"})
             _cache["equipment"] = df
             return df
         except Exception:
             logger.warning("Failed to read equipment cache, falling back to CSV")
+            metrics.increment("cache_errors", labels={"dataset": "equipment"})
 
     try:
+        metrics.increment("cache_misses", labels={"dataset": "equipment"})
         logger.info("Loading equipment data from %s", EQUIPMENT_CSV)
         df = pd.read_csv(
             EQUIPMENT_CSV,
@@ -224,19 +230,24 @@ def load_bases():
         pd.DataFrame: Processed bases data, or empty DataFrame on error.
     """
     if "bases" in _cache:
+        metrics.increment("cache_hits", labels={"dataset": "bases", "layer": "memory"})
         return _cache["bases"]
 
     # Try persistent Parquet cache first
     if _cache_is_fresh(BASES_CACHE, BASES_CSV):
         try:
             logger.info("Loading bases from Parquet cache: %s", BASES_CACHE)
-            df = pd.read_parquet(BASES_CACHE)
+            with metrics.timer("data_load_seconds", {"dataset": "bases", "source": "parquet"}):
+                df = pd.read_parquet(BASES_CACHE)
+            metrics.increment("cache_hits", labels={"dataset": "bases", "layer": "parquet"})
             _cache["bases"] = df
             return df
         except Exception:
             logger.warning("Failed to read bases cache, falling back to CSV")
+            metrics.increment("cache_errors", labels={"dataset": "bases"})
 
     try:
+        metrics.increment("cache_misses", labels={"dataset": "bases"})
         logger.info("Loading bases data from %s", BASES_CSV)
         df = pd.read_csv(
             BASES_CSV,
@@ -322,19 +333,24 @@ def load_healthcare():
         pd.DataFrame: Processed healthcare data, or empty DataFrame on error.
     """
     if "healthcare" in _cache:
+        metrics.increment("cache_hits", labels={"dataset": "healthcare", "layer": "memory"})
         return _cache["healthcare"]
 
     # Try persistent Parquet cache first
     if _cache_is_fresh(HEALTHCARE_CACHE, HEALTHCARE_CSV):
         try:
             logger.info("Loading healthcare from Parquet cache: %s", HEALTHCARE_CACHE)
-            df = pd.read_parquet(HEALTHCARE_CACHE)
+            with metrics.timer("data_load_seconds", {"dataset": "healthcare", "source": "parquet"}):
+                df = pd.read_parquet(HEALTHCARE_CACHE)
+            metrics.increment("cache_hits", labels={"dataset": "healthcare", "layer": "parquet"})
             _cache["healthcare"] = df
             return df
         except Exception:
             logger.warning("Failed to read healthcare cache, falling back to CSV")
+            metrics.increment("cache_errors", labels={"dataset": "healthcare"})
 
     try:
+        metrics.increment("cache_misses", labels={"dataset": "healthcare"})
         logger.info("Loading healthcare data from %s", HEALTHCARE_CSV)
         df = pd.read_csv(
             HEALTHCARE_CSV,
@@ -401,6 +417,7 @@ def load_ecg_precomputed():
         dict: Precomputed ECG statistics, or empty structure on error.
     """
     if "ecg" in _cache:
+        metrics.increment("cache_hits", labels={"dataset": "ecg", "layer": "memory"})
         return _cache["ecg"]
 
     try:
