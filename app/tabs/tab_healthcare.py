@@ -12,6 +12,9 @@ import numpy as np
 from app.components.chart_container import chart_container
 from app.data.loader import load_healthcare
 from app.config import PLOTLY_TEMPLATE, COLORS
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def _extract_keywords(df):
@@ -163,6 +166,7 @@ def layout():
     Input("health-keyword-search", "value"),
 )
 def update_healthcare(specialties, keyword):
+    logger.info("Healthcare callback: specialties=%s, keyword=%s", specialties, keyword)
     df = load_healthcare()
 
     if specialties:

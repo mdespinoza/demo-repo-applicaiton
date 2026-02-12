@@ -9,6 +9,9 @@ from scipy.signal import find_peaks
 from app.components.chart_container import chart_container
 from app.data.loader import load_ecg_precomputed
 from app.config import PLOTLY_TEMPLATE, COLORS
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 ECG_COLORS = [COLORS["secondary"], COLORS["danger"], COLORS["success"], COLORS["warning"], COLORS["accent"]]
@@ -505,6 +508,7 @@ def update_class_options(dataset):
     Input("ecg-scale-toggle", "value"),
 )
 def update_class_distribution(dataset, scale):
+    logger.info("ECG distribution callback: dataset=%s, scale=%s", dataset, scale)
     data = load_ecg_precomputed()
     ds = data[dataset]
 

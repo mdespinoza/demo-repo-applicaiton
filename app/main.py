@@ -75,6 +75,9 @@ def render_tab(active_tab):
 
 
 if __name__ == "__main__":
-    print("Starting Tactical Command Center...")
-    print("Open http://localhost:8050 in your browser")
+    from app.logging_config import setup_logging
+
+    logger = setup_logging()
+    logger.info("Starting Tactical Command Center...")
+    logger.info("Open http://localhost:8050 in your browser")
     app.run(debug=True, host="0.0.0.0", port=8050)
