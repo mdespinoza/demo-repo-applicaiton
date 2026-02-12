@@ -534,6 +534,11 @@ def update_class_distribution(dataset, scale):
 def update_waveform_overlay(dataset):
     data = load_ecg_precomputed()
     ds = data[dataset]
+
+    # Handle empty splits dictionary
+    if not ds["splits"]:
+        return go.Figure()
+
     split = ds["splits"].get("train", list(ds["splits"].values())[0])
 
     fig = go.Figure()
@@ -586,6 +591,11 @@ def update_sample_index(prev_clicks, next_clicks, class_name, current_idx, datas
 
     data = load_ecg_precomputed()
     ds = data[dataset]
+
+    # Handle empty splits dictionary
+    if not ds["splits"]:
+        return 0
+
     split = ds["splits"].get("train", list(ds["splits"].values())[0])
     n_samples = len(split["samples"].get(class_name, []))
 
@@ -614,6 +624,11 @@ def update_waveform_browser(sample_idx, class_name, dataset):
 
     data = load_ecg_precomputed()
     ds = data[dataset]
+
+    # Handle empty splits dictionary
+    if not ds["splits"]:
+        return go.Figure(), "0 / 0"
+
     split = ds["splits"].get("train", list(ds["splits"].values())[0])
     samples = split["samples"].get(class_name, [])
 
@@ -643,6 +658,11 @@ def update_waveform_browser(sample_idx, class_name, dataset):
 def update_features(dataset):
     data = load_ecg_precomputed()
     ds = data[dataset]
+
+    # Handle empty splits dictionary
+    if not ds["splits"]:
+        return go.Figure()
+
     split = ds["splits"].get("train", list(ds["splits"].values())[0])
     features = split["features"]
 
