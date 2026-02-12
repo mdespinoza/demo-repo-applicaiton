@@ -39,8 +39,10 @@ def layout():
                 [
                     dbc.Col(
                         html.Button(
-                            [html.I(className="bi bi-arrow-clockwise me-2", **{"aria-hidden": "true"}),
-                             "Refresh All Caches"],
+                            [
+                                html.I(className="bi bi-arrow-clockwise me-2", **{"aria-hidden": "true"}),
+                                "Refresh All Caches",
+                            ],
                             id="admin-refresh-all-btn",
                             className="btn btn-outline-warning btn-sm",
                             **{"aria-label": "Clear all in-memory caches and reload"},
@@ -73,40 +75,50 @@ def update_system_metrics(_):
     cards = [
         dbc.Col(
             dbc.Card(
-                dbc.CardBody([
-                    html.H6("Process Memory", className="kpi-title"),
-                    html.H3(_format_bytes(mem_info.rss), className="kpi-value", style={"color": "#38BDF8"}),
-                ]),
+                dbc.CardBody(
+                    [
+                        html.H6("Process Memory", className="kpi-title"),
+                        html.H3(_format_bytes(mem_info.rss), className="kpi-value", style={"color": "#38BDF8"}),
+                    ]
+                ),
                 className="kpi-card",
             ),
             md=3,
         ),
         dbc.Col(
             dbc.Card(
-                dbc.CardBody([
-                    html.H6("System Memory", className="kpi-title"),
-                    html.H3(f"{psutil.virtual_memory().percent}%", className="kpi-value", style={"color": "#22D3EE"}),
-                ]),
+                dbc.CardBody(
+                    [
+                        html.H6("System Memory", className="kpi-title"),
+                        html.H3(
+                            f"{psutil.virtual_memory().percent}%", className="kpi-value", style={"color": "#22D3EE"}
+                        ),
+                    ]
+                ),
                 className="kpi-card",
             ),
             md=3,
         ),
         dbc.Col(
             dbc.Card(
-                dbc.CardBody([
-                    html.H6("CPU Usage", className="kpi-title"),
-                    html.H3(f"{cpu_pct:.1f}%", className="kpi-value", style={"color": "#34D399"}),
-                ]),
+                dbc.CardBody(
+                    [
+                        html.H6("CPU Usage", className="kpi-title"),
+                        html.H3(f"{cpu_pct:.1f}%", className="kpi-value", style={"color": "#34D399"}),
+                    ]
+                ),
                 className="kpi-card",
             ),
             md=3,
         ),
         dbc.Col(
             dbc.Card(
-                dbc.CardBody([
-                    html.H6("Python Version", className="kpi-title"),
-                    html.H3(platform.python_version(), className="kpi-value", style={"color": "#FBBF24"}),
-                ]),
+                dbc.CardBody(
+                    [
+                        html.H6("Python Version", className="kpi-title"),
+                        html.H3(platform.python_version(), className="kpi-value", style={"color": "#FBBF24"}),
+                    ]
+                ),
                 className="kpi-card",
             ),
             md=3,
@@ -127,14 +139,18 @@ def update_cache_status(_, n_clicks):
 
     cards = []
     for ds in cache_info:
-        mem_badge = dbc.Badge("In Memory", color="success", className="me-1") if ds["in_memory"] else dbc.Badge(
-            "Not Loaded", color="secondary", className="me-1"
+        mem_badge = (
+            dbc.Badge("In Memory", color="success", className="me-1")
+            if ds["in_memory"]
+            else dbc.Badge("Not Loaded", color="secondary", className="me-1")
         )
-        cache_badge = dbc.Badge("Cached", color="info", className="me-1") if ds["cache_exists"] else dbc.Badge(
-            "No Cache", color="warning", className="me-1"
+        cache_badge = (
+            dbc.Badge("Cached", color="info", className="me-1")
+            if ds["cache_exists"]
+            else dbc.Badge("No Cache", color="warning", className="me-1")
         )
-        source_badge = dbc.Badge("Source OK", color="success") if ds["source_exists"] else dbc.Badge(
-            "Missing", color="danger"
+        source_badge = (
+            dbc.Badge("Source OK", color="success") if ds["source_exists"] else dbc.Badge("Missing", color="danger")
         )
 
         rows_text = ""
@@ -143,27 +159,31 @@ def update_cache_status(_, n_clicks):
 
         card = dbc.Col(
             dbc.Card(
-                dbc.CardBody([
-                    html.H5(ds["name"], className="chart-title", style={"borderBottom": "none", "marginBottom": "8px"}),
-                    html.Div([mem_badge, cache_badge, source_badge], className="mb-2"),
-                    html.Div([
-                        html.Small(
-                            f"Cache: {ds['cache_size_mb']} MB",
-                            className="text-muted d-block",
+                dbc.CardBody(
+                    [
+                        html.H5(
+                            ds["name"], className="chart-title", style={"borderBottom": "none", "marginBottom": "8px"}
                         ),
-                        html.Small(
-                            f"Last cached: {ds['cache_modified'] or 'Never'}",
-                            className="text-muted d-block",
+                        html.Div([mem_badge, cache_badge, source_badge], className="mb-2"),
+                        html.Div(
+                            [
+                                html.Small(
+                                    f"Cache: {ds['cache_size_mb']} MB",
+                                    className="text-muted d-block",
+                                ),
+                                html.Small(
+                                    f"Last cached: {ds['cache_modified'] or 'Never'}",
+                                    className="text-muted d-block",
+                                ),
+                                html.Small(
+                                    f"Source: {ds['source_modified'] or 'N/A'}",
+                                    className="text-muted d-block",
+                                ),
+                                html.Small(rows_text, className="text-muted d-block") if rows_text else None,
+                            ]
                         ),
-                        html.Small(
-                            f"Source: {ds['source_modified'] or 'N/A'}",
-                            className="text-muted d-block",
-                        ),
-                        html.Small(
-                            rows_text, className="text-muted d-block"
-                        ) if rows_text else None,
-                    ]),
-                ]),
+                    ]
+                ),
                 className="chart-card",
             ),
             md=3,
@@ -181,35 +201,47 @@ def update_cache_status(_, n_clicks):
                 total_size += sz
                 mtime = datetime.fromtimestamp(os.path.getmtime(fpath)).strftime("%Y-%m-%d %H:%M:%S")
                 disk_rows.append(
-                    html.Tr([
-                        html.Td(f, style={"color": "#E2E8F0"}),
-                        html.Td(_format_bytes(sz), style={"color": "#94A3B8"}),
-                        html.Td(mtime, style={"color": "#94A3B8"}),
-                    ])
+                    html.Tr(
+                        [
+                            html.Td(f, style={"color": "#E2E8F0"}),
+                            html.Td(_format_bytes(sz), style={"color": "#94A3B8"}),
+                            html.Td(mtime, style={"color": "#94A3B8"}),
+                        ]
+                    )
                 )
         disk_rows.append(
-            html.Tr([
-                html.Td("Total", style={"color": "#38BDF8", "fontWeight": "700"}),
-                html.Td(_format_bytes(total_size), style={"color": "#38BDF8", "fontWeight": "700"}),
-                html.Td("", style={"color": "#94A3B8"}),
-            ])
+            html.Tr(
+                [
+                    html.Td("Total", style={"color": "#38BDF8", "fontWeight": "700"}),
+                    html.Td(_format_bytes(total_size), style={"color": "#38BDF8", "fontWeight": "700"}),
+                    html.Td("", style={"color": "#94A3B8"}),
+                ]
+            )
         )
 
-    disk_table = dbc.Table(
-        [
-            html.Thead(html.Tr([
-                html.Th("File", style={"color": "#38BDF8"}),
-                html.Th("Size", style={"color": "#38BDF8"}),
-                html.Th("Last Modified", style={"color": "#38BDF8"}),
-            ])),
-            html.Tbody(disk_rows),
-        ],
-        bordered=True,
-        dark=True,
-        hover=True,
-        size="sm",
-        style={"maxWidth": "600px"},
-    ) if disk_rows else html.P("No cache files found.", className="text-muted")
+    disk_table = (
+        dbc.Table(
+            [
+                html.Thead(
+                    html.Tr(
+                        [
+                            html.Th("File", style={"color": "#38BDF8"}),
+                            html.Th("Size", style={"color": "#38BDF8"}),
+                            html.Th("Last Modified", style={"color": "#38BDF8"}),
+                        ]
+                    )
+                ),
+                html.Tbody(disk_rows),
+            ],
+            bordered=True,
+            dark=True,
+            hover=True,
+            size="sm",
+            style={"maxWidth": "600px"},
+        )
+        if disk_rows
+        else html.P("No cache files found.", className="text-muted")
+    )
 
     return cards, disk_table
 

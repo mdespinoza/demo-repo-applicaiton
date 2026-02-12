@@ -550,11 +550,13 @@ def layout():
                                         ),
                                         dcc.Loading(
                                             dcc.Graph(id="ecg-fiducial-graph", style={"height": "280px"}),
-                                            type="circle", color="#38BDF8",
+                                            type="circle",
+                                            color="#38BDF8",
                                         ),
                                         dcc.Loading(
                                             html.Div(id="ecg-fiducial-table"),
-                                            type="circle", color="#38BDF8",
+                                            type="circle",
+                                            color="#38BDF8",
                                         ),
                                     ]
                                 ),

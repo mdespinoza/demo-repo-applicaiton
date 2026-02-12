@@ -115,8 +115,7 @@ def layout():
                 dbc.Col(
                     html.Button(
                         [
-                            html.I(className="bi bi-download me-2",
-                                   **{"aria-hidden": "true"}),
+                            html.I(className="bi bi-download me-2", **{"aria-hidden": "true"}),
                             "Export Combined Data (CSV)",
                         ],
                         id="combined-export-btn",

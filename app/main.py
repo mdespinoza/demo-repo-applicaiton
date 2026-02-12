@@ -12,8 +12,13 @@ from dash import dcc, html, Input, Output, no_update  # noqa: E402
 import dash_bootstrap_components as dbc  # noqa: E402
 
 from app.tabs import (  # noqa: E402
-    tab_instructions, tab_equipment, tab_ecg, tab_bases,
-    tab_healthcare, tab_combined, tab_admin,
+    tab_instructions,
+    tab_equipment,
+    tab_ecg,
+    tab_bases,
+    tab_healthcare,
+    tab_combined,
+    tab_admin,
 )
 
 # Initialize Dash app

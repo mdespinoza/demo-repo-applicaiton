@@ -33,7 +33,8 @@ def kpi_card(title, value, icon=None, color="#3498DB", info=None):
                         style={"display": "flex", "alignItems": "center", "justifyContent": "center"} if info else {},
                     ),
                     html.H3(
-                        value, className="kpi-value",
+                        value,
+                        className="kpi-value",
                         style={"color": color},
                         **{"aria-label": f"{title}: {value}"},
                     ),

@@ -97,8 +97,7 @@ def layout():
                 dbc.Col(
                     html.Button(
                         [
-                            html.I(className="bi bi-download me-2",
-                                   **{"aria-hidden": "true"}),
+                            html.I(className="bi bi-download me-2", **{"aria-hidden": "true"}),
                             "Export Filtered Data (CSV)",
                         ],
                         id="health-export-btn",
@@ -223,40 +222,44 @@ def layout():
                                             target="health-datatable-info-icon",
                                             placement="right",
                                         ),
-                                        dcc.Loading(dash_table.DataTable(
-                                            id="health-datatable",
-                                            columns=[
-                                                {"name": "ID", "id": "Serial No"},
-                                                {"name": "Specialty", "id": "medical_specialty"},
-                                                {"name": "Sample Name", "id": "sample_name"},
-                                                {"name": "Description", "id": "description"},
-                                                {"name": "Length", "id": "transcription_length"},
-                                            ],
-                                            page_size=10,
-                                            sort_action="native",
-                                            filter_action="native",
-                                            style_table={"overflowX": "auto"},
-                                            style_cell={
-                                                "textAlign": "left",
-                                                "padding": "8px",
-                                                "fontSize": "13px",
-                                                "maxWidth": "300px",
-                                                "overflow": "hidden",
-                                                "textOverflow": "ellipsis",
-                                                "backgroundColor": "#151D2E",
-                                                "color": "#E2E8F0",
-                                                "borderColor": "rgba(99, 125, 175, 0.12)",
-                                            },
-                                            style_header={
-                                                "backgroundColor": "#0B0F19",
-                                                "color": "#38BDF8",
-                                                "fontWeight": "bold",
-                                            },
-                                            style_data_conditional=[
-                                                {"if": {"row_index": "odd"}, "backgroundColor": "#111827"},
-                                            ],
-                                            row_selectable="single",
-                                        ), type="circle", color="#38BDF8"),
+                                        dcc.Loading(
+                                            dash_table.DataTable(
+                                                id="health-datatable",
+                                                columns=[
+                                                    {"name": "ID", "id": "Serial No"},
+                                                    {"name": "Specialty", "id": "medical_specialty"},
+                                                    {"name": "Sample Name", "id": "sample_name"},
+                                                    {"name": "Description", "id": "description"},
+                                                    {"name": "Length", "id": "transcription_length"},
+                                                ],
+                                                page_size=10,
+                                                sort_action="native",
+                                                filter_action="native",
+                                                style_table={"overflowX": "auto"},
+                                                style_cell={
+                                                    "textAlign": "left",
+                                                    "padding": "8px",
+                                                    "fontSize": "13px",
+                                                    "maxWidth": "300px",
+                                                    "overflow": "hidden",
+                                                    "textOverflow": "ellipsis",
+                                                    "backgroundColor": "#151D2E",
+                                                    "color": "#E2E8F0",
+                                                    "borderColor": "rgba(99, 125, 175, 0.12)",
+                                                },
+                                                style_header={
+                                                    "backgroundColor": "#0B0F19",
+                                                    "color": "#38BDF8",
+                                                    "fontWeight": "bold",
+                                                },
+                                                style_data_conditional=[
+                                                    {"if": {"row_index": "odd"}, "backgroundColor": "#111827"},
+                                                ],
+                                                row_selectable="single",
+                                            ),
+                                            type="circle",
+                                            color="#38BDF8",
+                                        ),
                                     ]
                                 ),
                                 className="chart-card",
