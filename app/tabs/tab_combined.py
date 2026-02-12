@@ -65,6 +65,11 @@ def _build_combined_data():
 
 
 def layout():
+    """Build the Combined Intelligence tab layout with filters and chart containers.
+
+    Returns:
+        dash.html.Div: Complete tab layout with filter panel and cross-dataset charts.
+    """
     return html.Div(
         [
             # --- Intermediate data store ---
@@ -261,6 +266,15 @@ def layout():
     Input("combined-min-bases", "value"),
 )
 def update_combined_store(regions, min_bases):
+    """Build combined dataset, apply filters, and store pre-computed aggregations.
+
+    Args:
+        regions: List of selected census regions, or None for all.
+        min_bases: Minimum base count threshold per state.
+
+    Returns:
+        str: JSON-encoded dict with combined data, yearly values, regional aggs, etc.
+    """
     logger.info("Combined filter callback: regions=%s, min_bases=%s", regions, min_bases)
     combined, branch_by_state, equip_df, bases_df = _build_combined_data()
 
@@ -329,6 +343,14 @@ def update_combined_store(regions, min_bases):
     Input("combined-filtered-store", "data"),
 )
 def update_combined_maps(store_data):
+    """Generate dual-layer map and temporal equipment overlay figures.
+
+    Args:
+        store_data: JSON string from combined-filtered-store.
+
+    Returns:
+        tuple: (dual_fig, temporal_fig) Plotly Figure objects.
+    """
     if store_data is None:
         return no_update, no_update
 
@@ -429,6 +451,14 @@ def update_combined_maps(store_data):
     Input("combined-filtered-store", "data"),
 )
 def update_combined_scatter(store_data):
+    """Generate correlation scatter, quadrant analysis, and agency bubble charts.
+
+    Args:
+        store_data: JSON string from combined-filtered-store.
+
+    Returns:
+        tuple: (scatter_fig, quadrant_fig, bubble_fig) Plotly Figure objects.
+    """
     if store_data is None:
         return no_update, no_update, no_update
 
@@ -540,6 +570,14 @@ def update_combined_scatter(store_data):
     Input("combined-filtered-store", "data"),
 )
 def update_combined_bars(store_data):
+    """Generate butterfly chart, equipment-per-base ratio, and combined ranking.
+
+    Args:
+        store_data: JSON string from combined-filtered-store.
+
+    Returns:
+        tuple: (butterfly_fig, epb_fig, ranking_fig) Plotly Figure objects.
+    """
     if store_data is None:
         return no_update, no_update, no_update
 
@@ -653,6 +691,14 @@ def update_combined_bars(store_data):
     Input("combined-filtered-store", "data"),
 )
 def update_combined_advanced(store_data):
+    """Generate branch-vs-category heatmap and regional radar chart.
+
+    Args:
+        store_data: JSON string from combined-filtered-store.
+
+    Returns:
+        tuple: (heatmap_fig, radar_fig) Plotly Figure objects.
+    """
     if store_data is None:
         return no_update, no_update
 

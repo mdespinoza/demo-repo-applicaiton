@@ -5,7 +5,17 @@ import dash_bootstrap_components as dbc
 
 
 def chart_container(graph_id, title=None, height=450, info=None):
-    """Wrap a dcc.Graph in a card with optional title and loading spinner."""
+    """Wrap a dcc.Graph in a styled card with optional title and loading spinner.
+
+    Args:
+        graph_id: Unique Dash component ID for the dcc.Graph.
+        title: Optional chart title displayed above the graph.
+        height: Graph height in pixels (default 450).
+        info: Optional tooltip text shown via an info icon beside the title.
+
+    Returns:
+        dbc.Card: Bootstrap card containing the titled graph with loading indicator.
+    """
     children = []
     if title:
         if info:

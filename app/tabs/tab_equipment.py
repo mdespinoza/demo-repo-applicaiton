@@ -19,6 +19,11 @@ logger = get_logger(__name__)
 
 
 def layout():
+    """Build the Equipment Transfers tab layout with filters and chart containers.
+
+    Returns:
+        dash.html.Div: Complete tab layout with filter panel, KPI row, and chart grid.
+    """
     df = load_equipment()
     states = sorted(df["State"].dropna().unique())
     categories = sorted(df["Category"].dropna().unique())
@@ -274,6 +279,16 @@ def layout():
     Input("equip-category-filter", "value"),
 )
 def update_equip_store(states, year_range, categories):
+    """Filter equipment data and store pre-computed aggregations in dcc.Store.
+
+    Args:
+        states: List of selected state abbreviations, or None for all.
+        year_range: Two-element list [min_year, max_year].
+        categories: List of selected equipment categories, or None for all.
+
+    Returns:
+        str: JSON-encoded dict with filtered DataFrame, state aggregations, and KPIs.
+    """
     logger.info("Equipment filter callback: states=%s, years=%s, categories=%s", states, year_range, categories)
     df = load_equipment()
 
@@ -311,6 +326,14 @@ def update_equip_store(states, year_range, categories):
     Input("equip-filtered-store", "data"),
 )
 def update_equip_kpis(store_data):
+    """Render KPI cards from pre-computed store data.
+
+    Args:
+        store_data: JSON string from equip-filtered-store.
+
+    Returns:
+        dbc.Row: Row of four KPI cards (total items, value, agencies, states).
+    """
     if store_data is None:
         return no_update
 
@@ -377,6 +400,15 @@ def update_equip_kpis(store_data):
     Input("equip-map-metric", "value"),
 )
 def update_equip_maps(store_data, map_metric):
+    """Generate choropleth, per-capita, and year-over-year growth figures.
+
+    Args:
+        store_data: JSON string from equip-filtered-store.
+        map_metric: "value" for acquisition value or "count" for item count.
+
+    Returns:
+        tuple: (choropleth_fig, percapita_fig, yoy_fig) Plotly Figure objects.
+    """
     if store_data is None:
         return no_update, no_update, no_update
 
@@ -496,6 +528,14 @@ def update_equip_maps(store_data, map_metric):
     Input("equip-filtered-store", "data"),
 )
 def update_equip_bars(store_data):
+    """Generate bar charts for top items, agencies, states, and avg value per item.
+
+    Args:
+        store_data: JSON string from equip-filtered-store.
+
+    Returns:
+        tuple: (top_items_fig, agencies_fig, top_states_fig, diversity_fig).
+    """
     if store_data is None:
         return no_update, no_update, no_update, no_update
 
@@ -599,6 +639,14 @@ def update_equip_bars(store_data):
     Input("equip-filtered-store", "data"),
 )
 def update_equip_timeline(store_data):
+    """Generate animated timeline of equipment transfers over time.
+
+    Args:
+        store_data: JSON string from equip-filtered-store.
+
+    Returns:
+        plotly.graph_objects.Figure: Animated line chart with play/pause controls.
+    """
     if store_data is None:
         return no_update
 
@@ -714,6 +762,14 @@ def update_equip_timeline(store_data):
     Input("equip-filtered-store", "data"),
 )
 def update_equip_categories(store_data):
+    """Generate treemap and DEMIL code breakdown figures.
+
+    Args:
+        store_data: JSON string from equip-filtered-store.
+
+    Returns:
+        tuple: (treemap_fig, demil_fig) Plotly Figure objects.
+    """
     if store_data is None:
         return no_update, no_update
 
