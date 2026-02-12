@@ -1,13 +1,35 @@
+<div align="center">
+
 # Multi-Domain Analytics Dashboard
 
-> **This is a demo application built purely for fun to demonstrate the ability to use Large Language Models (LLMs) to design, develop, and deploy a fully functional data visualization dashboard from scratch.** Every line of code, every visualization, and every design decision in this project was guided through LLM-assisted development — showcasing how AI can accelerate the creation of sophisticated, production-ready web applications.
+**50+ interactive visualizations across 4 datasets, built entirely with LLM-assisted development**
+
+[![CI](https://github.com/mdespinoza/demo-repo-applicaiton/actions/workflows/ci.yml/badge.svg)](https://github.com/mdespinoza/demo-repo-applicaiton/actions/workflows/ci.yml)
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
+![Dash 2.17](https://img.shields.io/badge/dash-2.17.1-00B4D8)
+![Plotly](https://img.shields.io/badge/plotly-5.22-3F4F75)
+![License](https://img.shields.io/badge/license-demo-lightgrey)
+
+<br>
+
+<img src="docs/screenshots/equipment-transfers.png" alt="Equipment Transfers Dashboard" width="700">
+
+<br>
+
+*A proof-of-concept dashboard unifying military logistics, biomedical signals, and healthcare NLP into one dark-themed command center.*
+
+</div>
+
+---
+
+> **This is a demo application built purely for fun to demonstrate the ability to use Large Language Models (LLMs) to design, develop, and deploy a fully functional data visualization dashboard from scratch.** Every line of code, every visualization, and every design decision in this project was guided through LLM-assisted development.
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [Live Preview](#live-preview)
+- [Screenshots](#screenshots)
 - [Features](#features)
 - [Technology Stack](#technology-stack)
 - [Project Structure](#project-structure)
@@ -45,15 +67,74 @@ This project is a **multi-domain analytics dashboard** that brings together four
 
 The entire application was designed and built using **LLM-assisted development** as a proof of concept, demonstrating that modern AI tools can produce clean, modular, well-architected code suitable for real-world deployment.
 
+After starting the application, navigate to `http://localhost:8050`.
+
 ---
 
-## Live Preview
+## Screenshots
 
-After starting the application, navigate to:
+<table>
+<tr>
+<td width="50%">
 
-```
-http://localhost:8050
-```
+**Equipment Transfers** — Choropleth maps, KPI cards, treemaps, timelines, and per-capita analysis of 130K+ DoD records.
+
+<img src="docs/screenshots/equipment-transfers.png" alt="Equipment Transfers" width="100%">
+
+</td>
+<td width="50%">
+
+**Installations Map** — Mapbox-powered geospatial view of 776 US military bases with branch filtering and sunburst drill-down.
+
+<img src="docs/screenshots/installations-map.png" alt="Installations Map" width="100%">
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**ECG Analysis** — Animated heartbeat playback with PQRST detection, waveform browser, PCA embeddings, and class heatmaps.
+
+<img src="docs/screenshots/ecg-analysis.png" alt="ECG Analysis" width="100%">
+
+</td>
+<td width="50%">
+
+**Healthcare Records** — Specialty distribution, word clouds, resource demand scoring, and searchable transcription tables.
+
+<img src="docs/screenshots/healthcare-records.png" alt="Healthcare Records" width="100%">
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Combined Intelligence** — Cross-dataset analysis joining equipment + bases data with radar charts, heatmaps, and bubble plots.
+
+<img src="docs/screenshots/combined-intel.png" alt="Combined Intelligence" width="100%">
+
+</td>
+<td width="50%">
+
+**Admin Dashboard** — System monitoring, cache management with status badges, and disk cache file cards with progress bars.
+
+<img src="docs/screenshots/admin-dashboard.png" alt="Admin Dashboard" width="100%">
+
+</td>
+</tr>
+</table>
+
+<details>
+<summary><strong>More screenshots</strong></summary>
+
+<br>
+
+| View | Screenshot |
+|------|-----------|
+| **Dashboard Header** — Tab navigation with icons, filter panel, and dark theme | <img src="docs/screenshots/dashboard-header.png" alt="Dashboard Header" width="600"> |
+| **Instructions Tab** — Onboarding guide with accordion sections and data source info | <img src="docs/screenshots/instructions.png" alt="Instructions" width="600"> |
+
+</details>
 
 ---
 
@@ -158,6 +239,14 @@ demo-repository-application/
 │   ├── bases.parquet                 # Parquet-cached bases data
 │   ├── healthcare.parquet            # Parquet-cached healthcare data
 │   └── ecg_precomputed.json          # ~2MB precomputed ECG statistics
+├── docs/                             # Documentation
+│   ├── screenshots/                  # Dashboard screenshots for README
+│   └── adr/                          # Architecture Decision Records
+│       ├── 0001-use-dash-framework.md
+│       ├── 0002-callback-architecture.md
+│       ├── 0003-multi-layer-caching.md
+│       ├── 0004-structured-logging-and-monitoring.md
+│       └── 0005-multi-stage-docker-build.md
 ├── tests/                            # Test suite
 │   ├── conftest.py                   # Shared fixtures (mock DataFrames, cache isolation)
 │   ├── test_data_loader.py           # Data loading unit tests
@@ -167,13 +256,6 @@ demo-repository-application/
 │   ├── test_metrics.py               # Metrics collection tests
 │   ├── test_logging_config.py        # Logging configuration tests
 │   └── test_error_tracking.py        # Error tracking tests
-├── docs/                             # Documentation
-│   └── adr/                          # Architecture Decision Records
-│       ├── 0001-use-dash-framework.md
-│       ├── 0002-callback-architecture.md
-│       ├── 0003-multi-layer-caching.md
-│       ├── 0004-structured-logging-and-monitoring.md
-│       └── 0005-multi-stage-docker-build.md
 ├── scripts/                          # Helper scripts
 │   ├── precompute_ecg_samples.py     # One-time ECG preprocessing script
 │   └── download_ecg_data.sh          # Kaggle CLI helper for full ECG dataset
@@ -256,9 +338,13 @@ All datasets are sourced from [Kaggle](https://www.kaggle.com/) and are included
 
 A comprehensive onboarding tab with accordion-based guides for navigating each section of the dashboard. Includes data source citations, usage tips, and interactive guidance.
 
+<img src="docs/screenshots/instructions.png" alt="Instructions Tab" width="600">
+
 ### 2. Equipment Transfers
 
 Deep analysis of the DoD 1033 Program — military surplus equipment transferred to local law enforcement.
+
+<img src="docs/screenshots/equipment-transfers.png" alt="Equipment Transfers" width="700">
 
 **Visualizations include:**
 - KPI summary cards (total items, total value, agencies served, states covered)
@@ -277,6 +363,8 @@ Deep analysis of the DoD 1033 Program — military surplus equipment transferred
 
 Geospatial analysis of 776 US military installations across all branches.
 
+<img src="docs/screenshots/installations-map.png" alt="Installations Map" width="700">
+
 **Visualizations include:**
 - Interactive Mapbox map with branch-colored markers
 - State density choropleth with marker overlay
@@ -293,6 +381,8 @@ Geospatial analysis of 776 US military installations across all branches.
 ### 4. ECG Analysis
 
 Biomedical signal processing and visualization of heartbeat waveforms from two clinical databases.
+
+<img src="docs/screenshots/ecg-analysis.png" alt="ECG Analysis" width="700">
 
 **Visualizations include:**
 - Animated ECG playback monitor with real-time PQRST peak detection
@@ -313,6 +403,8 @@ Biomedical signal processing and visualization of heartbeat waveforms from two c
 
 Medical transcription analysis for resource planning and specialty workload assessment.
 
+<img src="docs/screenshots/healthcare-records.png" alt="Healthcare Records" width="700">
+
 **Visualizations include:**
 - Specialty distribution bar chart (39 medical specialties)
 - Resource demand quadrant plot (volume vs. complexity)
@@ -328,6 +420,8 @@ Medical transcription analysis for resource planning and specialty workload asse
 ### 6. Combined Intelligence
 
 Cross-dataset analysis that joins military equipment transfer data with base installation data by state for strategic insights.
+
+<img src="docs/screenshots/combined-intel.png" alt="Combined Intelligence" width="700">
 
 **Visualizations include:**
 - Dual-layer choropleth map: equipment value heatmap + base location markers
@@ -346,11 +440,13 @@ Cross-dataset analysis that joins military equipment transfer data with base ins
 
 System administration panel for cache management and operational monitoring.
 
+<img src="docs/screenshots/admin-dashboard.png" alt="Admin Dashboard" width="700">
+
 **Features include:**
-- Cache status overview (size, age, existence for each dataset cache)
-- Clear cache controls (individual or all caches)
-- System resource monitoring (CPU usage, memory, disk)
-- Platform and runtime information
+- System resource monitoring (process memory, system memory, CPU usage, Python version)
+- Cache status cards with in-memory, disk, and source status badges
+- Refresh all caches with one-click control
+- Disk cache file cards with type badges, size bars, and total size summary
 
 ---
 

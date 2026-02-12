@@ -61,4 +61,11 @@ htmlcov/
 # Environment variables
 .env
 .env.local
+
+# Temporary screenshots (Playwright, debugging)
+/screenshots/
+/*.png
 image/README/1770825852402.png
+
+# Playwright MCP
+.playwright-mcp/
