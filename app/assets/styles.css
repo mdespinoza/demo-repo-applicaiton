@@ -897,3 +897,302 @@ body {
         display: none;
     }
 }
+
+/* ========================================================
+   SNAKE GAME — Hidden Easter Egg (Ctrl+Shift+G or type "snake")
+   Distinct neon-mint / cyberpunk palette
+   ======================================================== */
+
+/* ---------- Overlay ---------- */
+#snake-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5, 5, 20, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#snake-overlay.open {
+    display: flex;
+    opacity: 1;
+    animation: snakeFadeIn 0.35s ease forwards;
+}
+
+@keyframes snakeFadeIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- Modal Container ---------- */
+.snake-modal {
+    background: linear-gradient(160deg, #0a0a1a 0%, #0d1117 50%, #0a0e18 100%);
+    border: 1px solid rgba(0, 255, 170, 0.15);
+    border-radius: 16px;
+    box-shadow:
+        0 0 60px rgba(0, 255, 170, 0.08),
+        0 0 120px rgba(0, 255, 170, 0.04),
+        0 25px 80px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    max-width: 620px;
+    width: 95vw;
+    position: relative;
+}
+
+/* Scanline overlay on the modal */
+.snake-modal::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.05) 2px,
+        rgba(0, 0, 0, 0.05) 4px
+    );
+    pointer-events: none;
+    z-index: 10;
+    border-radius: 16px;
+}
+
+/* ---------- Header ---------- */
+.snake-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: rgba(0, 255, 170, 0.03);
+    border-bottom: 1px solid rgba(0, 255, 170, 0.1);
+}
+
+.snake-title-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.snake-icon {
+    font-size: 1.3rem;
+}
+
+.snake-title {
+    font-family: 'Inter', monospace;
+    font-weight: 900;
+    font-size: 1.1rem;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: #00ffaa;
+    text-shadow: 0 0 20px rgba(0, 255, 170, 0.5);
+}
+
+.snake-version {
+    font-size: 0.6rem;
+    color: rgba(0, 255, 170, 0.35);
+    font-weight: 500;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border: 1px solid rgba(0, 255, 170, 0.1);
+    border-radius: 4px;
+}
+
+/* ---------- Scores ---------- */
+.snake-scores {
+    display: flex;
+    gap: 16px;
+}
+
+.snake-score-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.snake-score-label {
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: rgba(0, 255, 170, 0.4);
+    text-transform: uppercase;
+}
+
+.snake-score-value {
+    font-family: 'Inter', monospace;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #00ffaa;
+    text-shadow: 0 0 12px rgba(0, 255, 170, 0.4);
+    font-variant-numeric: tabular-nums;
+    min-width: 36px;
+    text-align: center;
+}
+
+.snake-score-box.hi .snake-score-value {
+    color: #ffd700;
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+}
+
+.snake-score-box.hi .snake-score-label {
+    color: rgba(255, 215, 0, 0.4);
+}
+
+/* ---------- Close Button ---------- */
+.snake-close {
+    background: transparent;
+    border: 1px solid rgba(0, 255, 170, 0.12);
+    color: rgba(0, 255, 170, 0.5);
+    font-size: 1.4rem;
+    line-height: 1;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.snake-close:hover {
+    background: rgba(255, 45, 123, 0.1);
+    border-color: rgba(255, 45, 123, 0.3);
+    color: #ff2d7b;
+}
+
+/* ---------- Canvas Wrapper ---------- */
+.snake-canvas-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: #0a0a1a;
+}
+
+#snake-canvas {
+    display: block;
+    border-radius: 4px;
+    image-rendering: pixelated;
+}
+
+/* ---------- Start Overlay ---------- */
+.snake-start-overlay {
+    position: absolute;
+    inset: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 10, 26, 0.85);
+    border-radius: 4px;
+    z-index: 5;
+}
+
+.snake-start-content {
+    text-align: center;
+}
+
+.snake-start-title {
+    font-family: 'Inter', monospace;
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #00ffaa;
+    text-shadow: 0 0 30px rgba(0, 255, 170, 0.6);
+    letter-spacing: 8px;
+    margin-bottom: 12px;
+    animation: snakePulse 2s ease-in-out infinite;
+}
+
+@keyframes snakePulse {
+    0%, 100% { text-shadow: 0 0 30px rgba(0, 255, 170, 0.6); }
+    50%      { text-shadow: 0 0 50px rgba(0, 255, 170, 0.9), 0 0 80px rgba(0, 255, 170, 0.3); }
+}
+
+.snake-start-hint {
+    color: rgba(0, 255, 170, 0.45);
+    font-size: 0.78rem;
+    font-weight: 500;
+    margin-bottom: 24px;
+    letter-spacing: 0.5px;
+}
+
+.snake-start-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.snake-key-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.snake-key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: rgba(0, 255, 170, 0.06);
+    border: 1px solid rgba(0, 255, 170, 0.2);
+    border-radius: 6px;
+    color: #00ffaa;
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-family: 'Inter', monospace;
+}
+
+.snake-key-sep {
+    color: rgba(0, 255, 170, 0.25);
+    font-size: 0.65rem;
+    margin: 0 4px;
+}
+
+/* ---------- Footer ---------- */
+.snake-footer {
+    padding: 10px 20px;
+    background: rgba(0, 255, 170, 0.02);
+    border-top: 1px solid rgba(0, 255, 170, 0.08);
+    text-align: center;
+    color: rgba(0, 255, 170, 0.25);
+    font-size: 0.65rem;
+    letter-spacing: 0.3px;
+}
+
+.snake-footer kbd {
+    background: rgba(0, 255, 170, 0.08);
+    border: 1px solid rgba(0, 255, 170, 0.15);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: 'Inter', monospace;
+    font-size: 0.62rem;
+    color: #00ffaa;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 620px) {
+    .snake-canvas-wrap {
+        padding: 10px;
+    }
+
+    #snake-canvas {
+        width: 100%;
+        height: auto;
+    }
+
+    .snake-header {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .snake-start-title {
+        font-size: 1.6rem;
+    }
+}
