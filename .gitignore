@@ -46,6 +46,11 @@ datasets/ecg_data/ptbdb_abnormal.csv
 # Runtime cache (auto-generated)
 data_cache/
 
+# Test / coverage artifacts
+htmlcov/
+.coverage
+.pytest_cache/
+
 # Jupyter
 .ipynb_checkpoints/
 
