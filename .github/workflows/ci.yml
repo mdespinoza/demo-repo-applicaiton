@@ -57,7 +57,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install linters
-        run: pip install black==23.12.1 flake8==6.1.0 bandit==1.7.5
+        run: pip install black==23.12.1 flake8==6.1.0 bandit==1.9.3
 
       - name: Check formatting with black
         run: black --check --line-length 120 --target-version py310 app/ tests/
