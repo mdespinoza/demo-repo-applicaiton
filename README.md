@@ -133,6 +133,7 @@ After starting the application, navigate to `http://localhost:8050`.
 |------|-----------|
 | **Dashboard Header** — Tab navigation with icons, filter panel, and dark theme | <img src="docs/screenshots/dashboard-header.png" alt="Dashboard Header" width="600"> |
 | **Instructions Tab** — Onboarding guide with accordion sections and data source info | <img src="docs/screenshots/instructions.png" alt="Instructions" width="600"> |
+| **Snake Game** — Hidden easter egg (`Ctrl+Shift+G`) with neon cyberpunk theme, particle effects, and high score tracking | <img src="docs/screenshots/snake-game.png" alt="Snake Game Easter Egg" width="600"> |
 
 </details>
 
