@@ -8,6 +8,9 @@ from plotly.subplots import make_subplots
 from app.components.kpi_card import kpi_card
 from app.components.chart_container import chart_container
 from app.data.loader import load_bases
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 from app.config import PLOTLY_TEMPLATE, BRANCH_COLORS, COLORS, STATE_NAME_TO_ABBREV
 
 
@@ -110,6 +113,8 @@ def layout():
     Input("bases-joint-filter", "value"),
 )
 def update_bases(components, statuses, states, joints):
+    logger.info("Bases callback: components=%s, statuses=%s, states=%s, joints=%s",
+                components, statuses, states, joints)
     df = load_bases()
 
     if components:

@@ -9,6 +9,9 @@ from app.config import (
     EQUIPMENT_CSV, ECG_DIR, BASES_CSV, HEALTHCARE_CSV,
     CACHE_DIR, ECG_CACHE, get_equipment_category,
 )
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 # Increase CSV field size limit for GeoJSON polygons
 csv.field_size_limit(sys.maxsize)
@@ -119,7 +122,7 @@ def _precompute_ecg():
                 sample_fname = fname.replace(".csv", "_sample.csv")
                 fpath = os.path.join(ECG_DIR, sample_fname)
                 if os.path.exists(fpath):
-                    print(f"ℹ️  Using sample data: {sample_fname} (full dataset not found)")
+                    logger.info("Using sample data: %s (full dataset not found)", sample_fname)
 
             if os.path.exists(fpath):
                 df = pd.read_csv(fpath, header=None)

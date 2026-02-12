@@ -13,6 +13,9 @@ from app.config import (
     PLOTLY_TEMPLATE, COLORS, STATE_ABBREV_TO_NAME, STATE_NAME_TO_ABBREV,
     CENSUS_REGIONS, REGION_COLORS,
 )
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def _build_combined_data():
@@ -118,6 +121,7 @@ def layout():
     Input("combined-min-bases", "value"),
 )
 def update_combined(regions, min_bases):
+    logger.info("Combined callback: regions=%s, min_bases=%s", regions, min_bases)
     combined, branch_by_state, equip_df, bases_df = _build_combined_data()
 
     # Apply filters

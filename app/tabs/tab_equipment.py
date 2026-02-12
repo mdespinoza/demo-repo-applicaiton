@@ -8,6 +8,9 @@ import numpy as np
 
 from app.components.kpi_card import kpi_card
 from app.components.chart_container import chart_container
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 from app.data.loader import load_equipment
 from app.config import PLOTLY_TEMPLATE, COLORS, DEMIL_LABELS, STATE_POPULATION, CENSUS_REGIONS, REGION_COLORS
 
@@ -137,6 +140,8 @@ def layout():
     Input("equip-map-metric", "value"),
 )
 def update_equipment(states, year_range, categories, map_metric):
+    logger.info("Equipment callback: states=%s, years=%s, categories=%s, metric=%s",
+                states, year_range, categories, map_metric)
     df = load_equipment()
 
     # Apply filters
