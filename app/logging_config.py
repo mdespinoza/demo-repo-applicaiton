@@ -1,4 +1,5 @@
 """Structured logging configuration for the dashboard application."""
+
 import logging
 import os
 import sys

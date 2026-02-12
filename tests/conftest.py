@@ -1,8 +1,8 @@
 """Shared test fixtures for the Dash data visualization dashboard."""
+
 import pytest
 import pandas as pd
 import numpy as np
-
 
 # ── Cache Isolation ──────────────────────────────────────────────────
 
@@ -42,9 +42,7 @@ def mock_equipment_df():
             "UI": ["Each", "Each", "Each", "Each", "Each"],
             "Acquisition Value": [5000.0, 50000.0, 2500.0, 10000.0, 7500.0],
             "DEMIL Code": ["D", "A", "D", "A", "D"],
-            "Ship Date": pd.to_datetime(
-                ["2020-01-15", "2020-06-01", "2019-03-10", "2021-07-20", "2020-11-05"]
-            ),
+            "Ship Date": pd.to_datetime(["2020-01-15", "2020-06-01", "2019-03-10", "2021-07-20", "2020-11-05"]),
             "Year": [2020.0, 2020.0, 2019.0, 2021.0, 2020.0],
             "Category": [
                 "Weapons & Firearms",
@@ -189,9 +187,7 @@ def mock_ecg_precomputed():
             "pca_embedding": {
                 "x": rng.rand(n_mitbih * 5).tolist(),
                 "y": rng.rand(n_mitbih * 5).tolist(),
-                "labels": [
-                    name for name in mitbih_classes.values() for _ in range(5)
-                ],
+                "labels": [name for name in mitbih_classes.values() for _ in range(5)],
                 "explained_variance": [0.65, 0.20],
             },
         },
@@ -205,9 +201,7 @@ def mock_ecg_precomputed():
             "pca_embedding": {
                 "x": rng.rand(n_ptbdb * 5).tolist(),
                 "y": rng.rand(n_ptbdb * 5).tolist(),
-                "labels": [
-                    name for name in ptbdb_classes.values() for _ in range(5)
-                ],
+                "labels": [name for name in ptbdb_classes.values() for _ in range(5)],
                 "explained_variance": [0.70, 0.15],
             },
         },

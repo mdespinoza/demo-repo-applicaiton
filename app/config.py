@@ -1,4 +1,5 @@
 """Application configuration: paths, constants, color palette."""
+
 import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -16,18 +17,18 @@ ECG_CACHE = os.path.join(CACHE_DIR, "ecg_precomputed.json")
 
 # Color palette — modern dark theme
 COLORS = {
-    "primary": "#0B0F19",       # Deep navy base
-    "secondary": "#38BDF8",     # Electric blue accent
-    "success": "#34D399",       # Emerald green
-    "warning": "#FBBF24",       # Amber
-    "danger": "#FB7185",        # Rose
-    "info": "#22D3EE",          # Cyan
-    "light": "#E2E8F0",         # Light slate text
-    "dark": "#0B0F19",          # Deep navy
-    "background": "#0B0F19",    # Base background
-    "card_bg": "#151D2E",       # Card surface
-    "accent": "#818CF8",        # Indigo accent
-    "muted": "#64748B",         # Muted slate
+    "primary": "#0B0F19",  # Deep navy base
+    "secondary": "#38BDF8",  # Electric blue accent
+    "success": "#34D399",  # Emerald green
+    "warning": "#FBBF24",  # Amber
+    "danger": "#FB7185",  # Rose
+    "info": "#22D3EE",  # Cyan
+    "light": "#E2E8F0",  # Light slate text
+    "dark": "#0B0F19",  # Deep navy
+    "background": "#0B0F19",  # Base background
+    "card_bg": "#151D2E",  # Card surface
+    "accent": "#818CF8",  # Indigo accent
+    "muted": "#64748B",  # Muted slate
     "border": "rgba(99, 125, 175, 0.12)",
 }
 
@@ -126,6 +127,7 @@ FSC_CATEGORIES = {
     "99": "Miscellaneous",
 }
 
+
 # Simplified category mapping
 def get_equipment_category(nsn):
     """Map NSN to a simplified equipment category."""
@@ -182,40 +184,121 @@ def get_equipment_category(nsn):
     }
     return category_map.get(prefix, "Other")
 
+
 # US state abbreviation to full name mapping
 STATE_ABBREV_TO_NAME = {
-    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
-    "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware",
-    "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho",
-    "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas",
-    "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MD": "Maryland",
-    "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi",
-    "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada",
-    "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York",
-    "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma",
-    "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
-    "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah",
-    "VT": "Vermont", "VA": "Virginia", "WA": "Washington", "WV": "West Virginia",
-    "WI": "Wisconsin", "WY": "Wyoming", "DC": "District of Columbia",
-    "PR": "Puerto Rico", "VI": "Virgin Islands", "GU": "Guam", "AS": "American Samoa",
+    "AL": "Alabama",
+    "AK": "Alaska",
+    "AZ": "Arizona",
+    "AR": "Arkansas",
+    "CA": "California",
+    "CO": "Colorado",
+    "CT": "Connecticut",
+    "DE": "Delaware",
+    "FL": "Florida",
+    "GA": "Georgia",
+    "HI": "Hawaii",
+    "ID": "Idaho",
+    "IL": "Illinois",
+    "IN": "Indiana",
+    "IA": "Iowa",
+    "KS": "Kansas",
+    "KY": "Kentucky",
+    "LA": "Louisiana",
+    "ME": "Maine",
+    "MD": "Maryland",
+    "MA": "Massachusetts",
+    "MI": "Michigan",
+    "MN": "Minnesota",
+    "MS": "Mississippi",
+    "MO": "Missouri",
+    "MT": "Montana",
+    "NE": "Nebraska",
+    "NV": "Nevada",
+    "NH": "New Hampshire",
+    "NJ": "New Jersey",
+    "NM": "New Mexico",
+    "NY": "New York",
+    "NC": "North Carolina",
+    "ND": "North Dakota",
+    "OH": "Ohio",
+    "OK": "Oklahoma",
+    "OR": "Oregon",
+    "PA": "Pennsylvania",
+    "RI": "Rhode Island",
+    "SC": "South Carolina",
+    "SD": "South Dakota",
+    "TN": "Tennessee",
+    "TX": "Texas",
+    "UT": "Utah",
+    "VT": "Vermont",
+    "VA": "Virginia",
+    "WA": "Washington",
+    "WV": "West Virginia",
+    "WI": "Wisconsin",
+    "WY": "Wyoming",
+    "DC": "District of Columbia",
+    "PR": "Puerto Rico",
+    "VI": "Virgin Islands",
+    "GU": "Guam",
+    "AS": "American Samoa",
 }
 
 STATE_NAME_TO_ABBREV = {v: k for k, v in STATE_ABBREV_TO_NAME.items()}
 
 # US Census regions
 CENSUS_REGIONS = {
-    "CT": "Northeast", "ME": "Northeast", "MA": "Northeast", "NH": "Northeast",
-    "RI": "Northeast", "VT": "Northeast", "NJ": "Northeast", "NY": "Northeast", "PA": "Northeast",
-    "IL": "Midwest", "IN": "Midwest", "MI": "Midwest", "OH": "Midwest", "WI": "Midwest",
-    "IA": "Midwest", "KS": "Midwest", "MN": "Midwest", "MO": "Midwest",
-    "NE": "Midwest", "ND": "Midwest", "SD": "Midwest",
-    "DE": "South", "FL": "South", "GA": "South", "MD": "South", "NC": "South",
-    "SC": "South", "VA": "South", "DC": "South", "WV": "South",
-    "AL": "South", "KY": "South", "MS": "South", "TN": "South",
-    "AR": "South", "LA": "South", "OK": "South", "TX": "South",
-    "AZ": "West", "CO": "West", "ID": "West", "MT": "West", "NV": "West",
-    "NM": "West", "UT": "West", "WY": "West",
-    "AK": "West", "CA": "West", "HI": "West", "OR": "West", "WA": "West",
+    "CT": "Northeast",
+    "ME": "Northeast",
+    "MA": "Northeast",
+    "NH": "Northeast",
+    "RI": "Northeast",
+    "VT": "Northeast",
+    "NJ": "Northeast",
+    "NY": "Northeast",
+    "PA": "Northeast",
+    "IL": "Midwest",
+    "IN": "Midwest",
+    "MI": "Midwest",
+    "OH": "Midwest",
+    "WI": "Midwest",
+    "IA": "Midwest",
+    "KS": "Midwest",
+    "MN": "Midwest",
+    "MO": "Midwest",
+    "NE": "Midwest",
+    "ND": "Midwest",
+    "SD": "Midwest",
+    "DE": "South",
+    "FL": "South",
+    "GA": "South",
+    "MD": "South",
+    "NC": "South",
+    "SC": "South",
+    "VA": "South",
+    "DC": "South",
+    "WV": "South",
+    "AL": "South",
+    "KY": "South",
+    "MS": "South",
+    "TN": "South",
+    "AR": "South",
+    "LA": "South",
+    "OK": "South",
+    "TX": "South",
+    "AZ": "West",
+    "CO": "West",
+    "ID": "West",
+    "MT": "West",
+    "NV": "West",
+    "NM": "West",
+    "UT": "West",
+    "WY": "West",
+    "AK": "West",
+    "CA": "West",
+    "HI": "West",
+    "OR": "West",
+    "WA": "West",
 }
 
 REGION_COLORS = {
@@ -241,20 +324,61 @@ DEMIL_LABELS = {
 
 # US state populations (2020 Census estimates) for per-capita normalization
 STATE_POPULATION = {
-    "AL": 5024279, "AK": 733391, "AZ": 7151502, "AR": 3011524,
-    "CA": 39538223, "CO": 5773714, "CT": 3605944, "DE": 989948,
-    "FL": 21538187, "GA": 10711908, "HI": 1455271, "ID": 1839106,
-    "IL": 12812508, "IN": 6785528, "IA": 3190369, "KS": 2937880,
-    "KY": 4505836, "LA": 4657757, "ME": 1362359, "MD": 6177224,
-    "MA": 7029917, "MI": 10077331, "MN": 5706494, "MS": 2961279,
-    "MO": 6154913, "MT": 1084225, "NE": 1961504, "NV": 3104614,
-    "NH": 1377529, "NJ": 9288994, "NM": 2117522, "NY": 20201249,
-    "NC": 10439388, "ND": 779094, "OH": 11799448, "OK": 3959353,
-    "OR": 4237256, "PA": 13002700, "RI": 1097379, "SC": 5118425,
-    "SD": 886667, "TN": 6910840, "TX": 29145505, "UT": 3271616,
-    "VT": 643077, "VA": 8631393, "WA": 7614893, "WV": 1793716,
-    "WI": 5893718, "WY": 576851, "DC": 689545, "PR": 3285874,
-    "VI": 87146, "GU": 168485, "AS": 49710,
+    "AL": 5024279,
+    "AK": 733391,
+    "AZ": 7151502,
+    "AR": 3011524,
+    "CA": 39538223,
+    "CO": 5773714,
+    "CT": 3605944,
+    "DE": 989948,
+    "FL": 21538187,
+    "GA": 10711908,
+    "HI": 1455271,
+    "ID": 1839106,
+    "IL": 12812508,
+    "IN": 6785528,
+    "IA": 3190369,
+    "KS": 2937880,
+    "KY": 4505836,
+    "LA": 4657757,
+    "ME": 1362359,
+    "MD": 6177224,
+    "MA": 7029917,
+    "MI": 10077331,
+    "MN": 5706494,
+    "MS": 2961279,
+    "MO": 6154913,
+    "MT": 1084225,
+    "NE": 1961504,
+    "NV": 3104614,
+    "NH": 1377529,
+    "NJ": 9288994,
+    "NM": 2117522,
+    "NY": 20201249,
+    "NC": 10439388,
+    "ND": 779094,
+    "OH": 11799448,
+    "OK": 3959353,
+    "OR": 4237256,
+    "PA": 13002700,
+    "RI": 1097379,
+    "SC": 5118425,
+    "SD": 886667,
+    "TN": 6910840,
+    "TX": 29145505,
+    "UT": 3271616,
+    "VT": 643077,
+    "VA": 8631393,
+    "WA": 7614893,
+    "WV": 1793716,
+    "WI": 5893718,
+    "WY": 576851,
+    "DC": 689545,
+    "PR": 3285874,
+    "VI": 87146,
+    "GU": 168485,
+    "AS": 49710,
 }
 
 # Plotly template defaults
