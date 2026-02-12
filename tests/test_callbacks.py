@@ -66,9 +66,13 @@ def make_bases_store(mock_df):
     """Serialize a mock bases DataFrame as the filter store would."""
     df = mock_df.copy()
     df["hovertext"] = (
-        "<b>" + df["Site Name"].fillna("") + "</b><br>"
-        + df["COMPONENT"].fillna("") + "<br>"
-        + df["State Terr"].fillna("") + "<br>"
+        "<b>"
+        + df["Site Name"].fillna("")
+        + "</b><br>"
+        + df["COMPONENT"].fillna("")
+        + "<br>"
+        + df["State Terr"].fillna("")
+        + "<br>"
         + df["Oper Stat"].fillna("")
     )
     store = {

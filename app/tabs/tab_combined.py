@@ -309,8 +309,8 @@ def update_combined_store(regions, min_bases):
     bases_map_data = bases_df_loc[["lat", "lon", "Site Name"]].to_json(orient="split")
 
     store_data = {
-        "combined": combined.to_json(date_format='iso', orient='split'),
-        "branch_by_state": branch_by_state.to_json(date_format='iso', orient='split'),
+        "combined": combined.to_json(date_format="iso", orient="split"),
+        "branch_by_state": branch_by_state.to_json(date_format="iso", orient="split"),
         "selected_states": list(selected_states),
         "yearly_val": yearly_val.to_json(orient="split"),
         "region_agg": region_agg.to_json(orient="split"),
@@ -333,9 +333,9 @@ def update_combined_maps(store_data):
         return no_update, no_update
 
     data = json.loads(store_data)
-    combined = pd.read_json(io.StringIO(data["combined"]), orient='split')
-    yearly_val = pd.read_json(io.StringIO(data["yearly_val"]), orient='split')
-    bases_map = pd.read_json(io.StringIO(data["bases_map"]), orient='split')
+    combined = pd.read_json(io.StringIO(data["combined"]), orient="split")
+    yearly_val = pd.read_json(io.StringIO(data["yearly_val"]), orient="split")
+    bases_map = pd.read_json(io.StringIO(data["bases_map"]), orient="split")
 
     # 1. Dual-layer choropleth
     dual_fig = go.Figure()
@@ -433,7 +433,7 @@ def update_combined_scatter(store_data):
         return no_update, no_update, no_update
 
     data = json.loads(store_data)
-    combined = pd.read_json(io.StringIO(data["combined"]), orient='split')
+    combined = pd.read_json(io.StringIO(data["combined"]), orient="split")
 
     # 2. Correlation scatter
     combined_filtered = combined[(combined["base_count"] > 0) & (combined["equipment_value"] > 0)].copy()
@@ -544,7 +544,7 @@ def update_combined_bars(store_data):
         return no_update, no_update, no_update
 
     data = json.loads(store_data)
-    combined = pd.read_json(io.StringIO(data["combined"]), orient='split')
+    combined = pd.read_json(io.StringIO(data["combined"]), orient="split")
 
     # 3. Butterfly / paired bar
     top20 = combined.nlargest(20, "equipment_value").sort_values("equipment_value", ascending=True)
@@ -658,7 +658,7 @@ def update_combined_advanced(store_data):
 
     data = json.loads(store_data)
     heat_data = data["heat_data"]
-    region_agg = pd.read_json(io.StringIO(data["region_agg"]), orient='split')
+    region_agg = pd.read_json(io.StringIO(data["region_agg"]), orient="split")
 
     # 4. Branch vs category heatmap (using pre-computed heat_data)
     if heat_data:

@@ -274,9 +274,7 @@ def layout():
     Input("equip-category-filter", "value"),
 )
 def update_equip_store(states, year_range, categories):
-    logger.info(
-        "Equipment filter callback: states=%s, years=%s, categories=%s", states, year_range, categories
-    )
+    logger.info("Equipment filter callback: states=%s, years=%s, categories=%s", states, year_range, categories)
     df = load_equipment()
 
     # Apply filters
@@ -297,7 +295,7 @@ def update_equip_store(states, year_range, categories):
         "n_states": int(df["State"].nunique()),
     }
     store = {
-        "df": df.to_json(date_format='iso', orient='split'),
+        "df": df.to_json(date_format="iso", orient="split"),
         "state_value": state_value.to_json(),
         "state_qty": state_qty.to_json(),
         "kpis": kpis,
@@ -323,7 +321,7 @@ def update_equip_kpis(store_data):
     total_items = f"{kpis['total_items']:,}"
     total_value = f"${kpis['total_value']:,.0f}"
     n_agencies = f"{kpis['n_agencies']:,}"
-    n_states = str(kpis['n_states'])
+    n_states = str(kpis["n_states"])
     kpis = dbc.Row(
         [
             dbc.Col(
@@ -383,9 +381,9 @@ def update_equip_maps(store_data, map_metric):
         return no_update, no_update, no_update
 
     data = json.loads(store_data)
-    df = pd.read_json(io.StringIO(data["df"]), orient='split')
-    state_value_series = pd.read_json(io.StringIO(data["state_value"]), typ='series')
-    state_qty_series = pd.read_json(io.StringIO(data["state_qty"]), typ='series')
+    df = pd.read_json(io.StringIO(data["df"]), orient="split")
+    state_value_series = pd.read_json(io.StringIO(data["state_value"]), typ="series")
+    state_qty_series = pd.read_json(io.StringIO(data["state_qty"]), typ="series")
 
     # Choropleth — use pre-computed series
     if map_metric == "value":
@@ -502,8 +500,8 @@ def update_equip_bars(store_data):
         return no_update, no_update, no_update, no_update
 
     data = json.loads(store_data)
-    df = pd.read_json(io.StringIO(data["df"]), orient='split')
-    state_value_series = pd.read_json(io.StringIO(data["state_value"]), typ='series')
+    df = pd.read_json(io.StringIO(data["df"]), orient="split")
+    state_value_series = pd.read_json(io.StringIO(data["state_value"]), typ="series")
 
     # Top 15 items by quantity
     top_items = df.groupby("Item Name")["Quantity"].sum().nlargest(15).reset_index()
@@ -605,7 +603,7 @@ def update_equip_timeline(store_data):
         return no_update
 
     data = json.loads(store_data)
-    df = pd.read_json(io.StringIO(data["df"]), orient='split')
+    df = pd.read_json(io.StringIO(data["df"]), orient="split")
 
     # Timeline — animated line chart with play button
     timeline_df = df.dropna(subset=["Year"]).copy()
@@ -720,7 +718,7 @@ def update_equip_categories(store_data):
         return no_update, no_update
 
     data = json.loads(store_data)
-    df = pd.read_json(io.StringIO(data["df"]), orient='split')
+    df = pd.read_json(io.StringIO(data["df"]), orient="split")
 
     # Treemap
     treemap_df = (

@@ -261,14 +261,18 @@ def update_bases_filter(components, statuses, states, joints):
     df = df.copy()
     # Pre-compute hovertext using vectorized string ops (replaces row-wise .apply)
     df["hovertext"] = (
-        "<b>" + df["Site Name"].fillna("") + "</b><br>"
-        + df["COMPONENT"].fillna("") + "<br>"
-        + df["State Terr"].fillna("") + "<br>"
+        "<b>"
+        + df["Site Name"].fillna("")
+        + "</b><br>"
+        + df["COMPONENT"].fillna("")
+        + "<br>"
+        + df["State Terr"].fillna("")
+        + "<br>"
         + df["Oper Stat"].fillna("")
     )
 
     store = {
-        "df": df.to_json(date_format='iso', orient='split'),
+        "df": df.to_json(date_format="iso", orient="split"),
     }
     return json.dumps(store)
 
@@ -286,7 +290,7 @@ def update_bases_maps(store_data):
         return no_update, no_update
 
     data = json.loads(store_data)
-    df = pd.read_json(io.StringIO(data["df"]), orient='split')
+    df = pd.read_json(io.StringIO(data["df"]), orient="split")
 
     # Map - assign colors
     df_map = df.copy()
@@ -388,7 +392,7 @@ def update_bases_summary(store_data):
         return no_update, no_update
 
     data = json.loads(store_data)
-    df = pd.read_json(io.StringIO(data["df"]), orient='split')
+    df = pd.read_json(io.StringIO(data["df"]), orient="split")
 
     # Bases by branch (stacked by status)
     branch_status = df.groupby(["COMPONENT", "Oper Stat"]).size().reset_index(name="Count")
@@ -455,7 +459,7 @@ def update_bases_state(store_data):
         return no_update, no_update
 
     data = json.loads(store_data)
-    df = pd.read_json(io.StringIO(data["df"]), orient='split')
+    df = pd.read_json(io.StringIO(data["df"]), orient="split")
 
     # Bases by state (top 20, stacked by component)
     state_comp = df.groupby(["State Terr", "COMPONENT"]).size().reset_index(name="Count")
@@ -519,7 +523,7 @@ def update_bases_detail(store_data):
         return no_update, no_update, no_update, no_update
 
     data = json.loads(store_data)
-    df = pd.read_json(io.StringIO(data["df"]), orient='split')
+    df = pd.read_json(io.StringIO(data["df"]), orient="split")
 
     # Sunburst
     sun_df = df[["State Terr", "COMPONENT", "Site Name"]].copy()
