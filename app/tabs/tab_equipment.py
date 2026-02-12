@@ -1,7 +1,10 @@
 """Tab 1: Military Equipment Transfers visualization."""
 
+import io
+import json
+
 import dash_bootstrap_components as dbc
-from dash import dcc, html, callback, Input, Output
+from dash import dcc, html, callback, Input, Output, no_update
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
@@ -25,6 +28,8 @@ def layout():
 
     return html.Div(
         [
+            # Filtered data store
+            dcc.Store(id="equip-filtered-store"),
             # Filters
             dbc.Row(
                 [
@@ -259,26 +264,18 @@ def layout():
     )
 
 
+# ---------------------------------------------------------------------------
+# 1. Filter callback — writes filtered DataFrame to dcc.Store as JSON
+# ---------------------------------------------------------------------------
 @callback(
-    Output("equip-kpis", "children"),
-    Output("equip-choropleth", "figure"),
-    Output("equip-top-items", "figure"),
-    Output("equip-timeline", "figure"),
-    Output("equip-treemap", "figure"),
-    Output("equip-top-agencies", "figure"),
-    Output("equip-percapita", "figure"),
-    Output("equip-demil", "figure"),
-    Output("equip-top-states", "figure"),
-    Output("equip-diversity", "figure"),
-    Output("equip-yoy", "figure"),
+    Output("equip-filtered-store", "data"),
     Input("equip-state-filter", "value"),
     Input("equip-year-slider", "value"),
     Input("equip-category-filter", "value"),
-    Input("equip-map-metric", "value"),
 )
-def update_equipment(states, year_range, categories, map_metric):
+def update_equip_store(states, year_range, categories):
     logger.info(
-        "Equipment callback: states=%s, years=%s, categories=%s, metric=%s", states, year_range, categories, map_metric
+        "Equipment filter callback: states=%s, years=%s, categories=%s", states, year_range, categories
     )
     df = load_equipment()
 
@@ -290,11 +287,43 @@ def update_equipment(states, year_range, categories, map_metric):
     if categories:
         df = df[df["Category"].isin(categories)]
 
-    # KPIs
-    total_items = f"{int(df['Quantity'].sum()):,}"
-    total_value = f"${df['Acquisition Value'].sum():,.0f}"
-    n_agencies = f"{df['Agency Name'].nunique():,}"
-    n_states = str(df["State"].nunique())
+    # Pre-compute aggregations shared by multiple callbacks
+    state_value = df.groupby("State")["Acquisition Value"].sum()
+    state_qty = df.groupby("State")["Quantity"].sum()
+    kpis = {
+        "total_items": int(df["Quantity"].sum()),
+        "total_value": float(df["Acquisition Value"].sum()),
+        "n_agencies": int(df["Agency Name"].nunique()),
+        "n_states": int(df["State"].nunique()),
+    }
+    store = {
+        "df": df.to_json(date_format='iso', orient='split'),
+        "state_value": state_value.to_json(),
+        "state_qty": state_qty.to_json(),
+        "kpis": kpis,
+    }
+    return json.dumps(store)
+
+
+# ---------------------------------------------------------------------------
+# 2. KPI callback
+# ---------------------------------------------------------------------------
+@callback(
+    Output("equip-kpis", "children"),
+    Input("equip-filtered-store", "data"),
+)
+def update_equip_kpis(store_data):
+    if store_data is None:
+        return no_update
+
+    data = json.loads(store_data)
+    kpis = data["kpis"]
+
+    # KPIs — read from pre-computed values
+    total_items = f"{kpis['total_items']:,}"
+    total_value = f"${kpis['total_value']:,.0f}"
+    n_agencies = f"{kpis['n_agencies']:,}"
+    n_states = str(kpis['n_states'])
     kpis = dbc.Row(
         [
             dbc.Col(
@@ -336,14 +365,36 @@ def update_equipment(states, year_range, categories, map_metric):
         ]
     )
 
-    # Choropleth
+    return kpis
+
+
+# ---------------------------------------------------------------------------
+# 3. Maps callback — choropleth + per-capita + YoY
+# ---------------------------------------------------------------------------
+@callback(
+    Output("equip-choropleth", "figure"),
+    Output("equip-percapita", "figure"),
+    Output("equip-yoy", "figure"),
+    Input("equip-filtered-store", "data"),
+    Input("equip-map-metric", "value"),
+)
+def update_equip_maps(store_data, map_metric):
+    if store_data is None:
+        return no_update, no_update, no_update
+
+    data = json.loads(store_data)
+    df = pd.read_json(io.StringIO(data["df"]), orient='split')
+    state_value_series = pd.read_json(io.StringIO(data["state_value"]), typ='series')
+    state_qty_series = pd.read_json(io.StringIO(data["state_qty"]), typ='series')
+
+    # Choropleth — use pre-computed series
     if map_metric == "value":
-        state_agg = df.groupby("State")["Acquisition Value"].sum().reset_index()
+        state_agg = state_value_series.reset_index()
         state_agg.columns = ["State", "Value"]
         color_col = "Value"
         color_label = "Acquisition Value ($)"
     else:
-        state_agg = df.groupby("State")["Quantity"].sum().reset_index()
+        state_agg = state_qty_series.reset_index()
         state_agg.columns = ["State", "Value"]
         color_col = "Value"
         color_label = "Item Count"
@@ -374,6 +425,86 @@ def update_equipment(states, year_range, categories, map_metric):
         ),
     )
 
+    # --- Per-Capita Equipment Value — use pre-computed state_value_series ---
+    pc = state_value_series.reset_index()
+    pc.columns = ["State", "Total Value"]
+    pc["Population"] = pc["State"].map(STATE_POPULATION)
+    pc = pc.dropna(subset=["Population"])
+    pc["Per Capita Value"] = pc["Total Value"] / pc["Population"]
+
+    percapita_fig = px.choropleth(
+        pc,
+        locations="State",
+        locationmode="USA-states",
+        color="Per Capita Value",
+        color_continuous_scale="Reds",
+        scope="usa",
+        template=PLOTLY_TEMPLATE,
+        hover_data={"Total Value": ":$,.0f", "Population": ":,"},
+    )
+    percapita_fig.update_layout(
+        margin=dict(l=0, r=0, t=10, b=0),
+        coloraxis_colorbar=dict(title="$/Person", thickness=15),
+        geo=dict(
+            bgcolor="rgba(0,0,0,0)",
+            showland=True,
+            landcolor="#1A2332",
+            showlakes=True,
+            lakecolor="#0F1726",
+            showcountries=True,
+            countrycolor="rgba(99,125,175,0.2)",
+            showsubunits=True,
+            subunitcolor="rgba(99,125,175,0.15)",
+        ),
+        height=450,
+    )
+
+    # --- Year-over-Year Growth Rate ---
+    yearly_val = df.dropna(subset=["Year"]).groupby("Year")["Acquisition Value"].sum().sort_index()
+    if len(yearly_val) > 1:
+        yoy_pct = yearly_val.pct_change().dropna() * 100
+        yoy_df = pd.DataFrame({"Year": yoy_pct.index.astype(int), "Growth Rate (%)": yoy_pct.values})
+        bar_colors = [COLORS["success"] if v >= 0 else COLORS["danger"] for v in yoy_df["Growth Rate (%)"]]
+
+        yoy_fig = go.Figure(
+            go.Bar(
+                x=yoy_df["Year"],
+                y=yoy_df["Growth Rate (%)"],
+                marker_color=bar_colors,
+                hovertemplate="Year: %{x}<br>Growth: %{y:.1f}%<extra></extra>",
+            )
+        )
+    else:
+        yoy_fig = go.Figure()
+    yoy_fig.update_layout(
+        template=PLOTLY_TEMPLATE,
+        xaxis=dict(title="Year", dtick=2),
+        yaxis=dict(title="Growth Rate (%)", zeroline=True, zerolinecolor="rgba(255,255,255,0.3)"),
+        margin=dict(l=0, r=10, t=10, b=0),
+        height=450,
+    )
+
+    return choropleth, percapita_fig, yoy_fig
+
+
+# ---------------------------------------------------------------------------
+# 4. Bars callback — top items + top agencies + top states + avg value
+# ---------------------------------------------------------------------------
+@callback(
+    Output("equip-top-items", "figure"),
+    Output("equip-top-agencies", "figure"),
+    Output("equip-top-states", "figure"),
+    Output("equip-diversity", "figure"),
+    Input("equip-filtered-store", "data"),
+)
+def update_equip_bars(store_data):
+    if store_data is None:
+        return no_update, no_update, no_update, no_update
+
+    data = json.loads(store_data)
+    df = pd.read_json(io.StringIO(data["df"]), orient='split')
+    state_value_series = pd.read_json(io.StringIO(data["state_value"]), typ='series')
+
     # Top 15 items by quantity
     top_items = df.groupby("Item Name")["Quantity"].sum().nlargest(15).reset_index()
     top_items_fig = px.bar(
@@ -390,6 +521,91 @@ def update_equipment(states, year_range, categories, map_metric):
         xaxis=dict(title="Quantity"),
         height=450,
     )
+
+    # Top agencies
+    top_agencies = df.groupby("Agency Name")["Acquisition Value"].sum().nlargest(20).reset_index()
+    agencies_fig = px.bar(
+        top_agencies,
+        x="Acquisition Value",
+        y="Agency Name",
+        orientation="h",
+        template=PLOTLY_TEMPLATE,
+        color_discrete_sequence=[COLORS["success"]],
+    )
+    agencies_fig.update_layout(
+        margin=dict(l=0, r=10, t=10, b=0),
+        yaxis=dict(autorange="reversed", title=""),
+        xaxis=dict(title="Acquisition Value ($)"),
+        height=500,
+    )
+
+    # --- Top 10 States by Acquisition Value — use pre-computed ---
+    top_states_df = state_value_series.nlargest(10).reset_index()
+    top_states_df.columns = ["State", "Value"]
+    top_states_df["Region"] = top_states_df["State"].map(CENSUS_REGIONS).fillna("Other")
+    top_states_df = top_states_df.sort_values("Value", ascending=True)
+
+    top_states_fig = px.bar(
+        top_states_df,
+        x="Value",
+        y="State",
+        orientation="h",
+        template=PLOTLY_TEMPLATE,
+        color="Region",
+        color_discrete_map=REGION_COLORS,
+        labels={"Value": "Acquisition Value ($)", "State": ""},
+    )
+    top_states_fig.update_layout(
+        margin=dict(l=0, r=10, t=10, b=0),
+        height=450,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    )
+
+    # --- Average Value per Item by State ---
+    state_avg = (
+        df.groupby("State")
+        .agg(
+            total_value=("Acquisition Value", "sum"),
+            total_qty=("Quantity", "sum"),
+        )
+        .reset_index()
+    )
+    state_avg = state_avg[state_avg["total_qty"] > 0]
+    state_avg["Avg Value per Item"] = state_avg["total_value"] / state_avg["total_qty"]
+    state_avg = state_avg.nlargest(25, "Avg Value per Item").sort_values("Avg Value per Item", ascending=True)
+
+    diversity_fig = px.bar(
+        state_avg,
+        x="Avg Value per Item",
+        y="State",
+        orientation="h",
+        template=PLOTLY_TEMPLATE,
+        color_discrete_sequence=[COLORS["accent"]],
+        hover_data={"total_value": ":$,.0f", "total_qty": ":,"},
+    )
+    diversity_fig.update_layout(
+        yaxis=dict(title=""),
+        xaxis=dict(title="Average Value per Item ($)"),
+        margin=dict(l=0, r=10, t=10, b=0),
+        height=450,
+    )
+
+    return top_items_fig, agencies_fig, top_states_fig, diversity_fig
+
+
+# ---------------------------------------------------------------------------
+# 5. Timeline callback — animated line chart
+# ---------------------------------------------------------------------------
+@callback(
+    Output("equip-timeline", "figure"),
+    Input("equip-filtered-store", "data"),
+)
+def update_equip_timeline(store_data):
+    if store_data is None:
+        return no_update
+
+    data = json.loads(store_data)
+    df = pd.read_json(io.StringIO(data["df"]), orient='split')
 
     # Timeline — animated line chart with play button
     timeline_df = df.dropna(subset=["Year"]).copy()
@@ -488,6 +704,24 @@ def update_equipment(states, year_range, categories, map_metric):
         height=450,
     )
 
+    return timeline_fig
+
+
+# ---------------------------------------------------------------------------
+# 6. Categories callback — treemap + DEMIL
+# ---------------------------------------------------------------------------
+@callback(
+    Output("equip-treemap", "figure"),
+    Output("equip-demil", "figure"),
+    Input("equip-filtered-store", "data"),
+)
+def update_equip_categories(store_data):
+    if store_data is None:
+        return no_update, no_update
+
+    data = json.loads(store_data)
+    df = pd.read_json(io.StringIO(data["df"]), orient='split')
+
     # Treemap
     treemap_df = (
         df.groupby(["Category", "Item Name"])
@@ -511,58 +745,7 @@ def update_equipment(states, year_range, categories, map_metric):
         treemap_fig = go.Figure()
     treemap_fig.update_layout(margin=dict(l=0, r=0, t=10, b=0), height=450)
 
-    # Top agencies
-    top_agencies = df.groupby("Agency Name")["Acquisition Value"].sum().nlargest(20).reset_index()
-    agencies_fig = px.bar(
-        top_agencies,
-        x="Acquisition Value",
-        y="Agency Name",
-        orientation="h",
-        template=PLOTLY_TEMPLATE,
-        color_discrete_sequence=[COLORS["success"]],
-    )
-    agencies_fig.update_layout(
-        margin=dict(l=0, r=10, t=10, b=0),
-        yaxis=dict(autorange="reversed", title=""),
-        xaxis=dict(title="Acquisition Value ($)"),
-        height=500,
-    )
-
-    # --- NEW CHART E3: Per-Capita Equipment Value ---
-    state_value = df.groupby("State")["Acquisition Value"].sum().reset_index()
-    state_value.columns = ["State", "Total Value"]
-    state_value["Population"] = state_value["State"].map(STATE_POPULATION)
-    state_value = state_value.dropna(subset=["Population"])
-    state_value["Per Capita Value"] = state_value["Total Value"] / state_value["Population"]
-
-    percapita_fig = px.choropleth(
-        state_value,
-        locations="State",
-        locationmode="USA-states",
-        color="Per Capita Value",
-        color_continuous_scale="Reds",
-        scope="usa",
-        template=PLOTLY_TEMPLATE,
-        hover_data={"Total Value": ":$,.0f", "Population": ":,"},
-    )
-    percapita_fig.update_layout(
-        margin=dict(l=0, r=0, t=10, b=0),
-        coloraxis_colorbar=dict(title="$/Person", thickness=15),
-        geo=dict(
-            bgcolor="rgba(0,0,0,0)",
-            showland=True,
-            landcolor="#1A2332",
-            showlakes=True,
-            lakecolor="#0F1726",
-            showcountries=True,
-            countrycolor="rgba(99,125,175,0.2)",
-            showsubunits=True,
-            subunitcolor="rgba(99,125,175,0.15)",
-        ),
-        height=450,
-    )
-
-    # --- NEW CHART E1: DEMIL Code Breakdown ---
+    # --- DEMIL Code Breakdown ---
     demil_df = df.copy()
     demil_df["DEMIL Label"] = demil_df["DEMIL Code"].map(DEMIL_LABELS).fillna(demil_df["DEMIL Code"])
     # Top 8 categories by value for readability
@@ -594,92 +777,4 @@ def update_equipment(states, year_range, categories, map_metric):
         height=450,
     )
 
-    # --- NEW CHART E2: Top 10 States by Acquisition Value ---
-    top_states_df = df.groupby("State")["Acquisition Value"].sum().nlargest(10).reset_index()
-    top_states_df.columns = ["State", "Value"]
-    top_states_df["Region"] = top_states_df["State"].map(CENSUS_REGIONS).fillna("Other")
-    top_states_df = top_states_df.sort_values("Value", ascending=True)
-
-    top_states_fig = px.bar(
-        top_states_df,
-        x="Value",
-        y="State",
-        orientation="h",
-        template=PLOTLY_TEMPLATE,
-        color="Region",
-        color_discrete_map=REGION_COLORS,
-        labels={"Value": "Acquisition Value ($)", "State": ""},
-    )
-    top_states_fig.update_layout(
-        margin=dict(l=0, r=10, t=10, b=0),
-        height=450,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-    )
-
-    # --- CHART E4: Average Value per Item by State ---
-    state_avg = (
-        df.groupby("State")
-        .agg(
-            total_value=("Acquisition Value", "sum"),
-            total_qty=("Quantity", "sum"),
-        )
-        .reset_index()
-    )
-    state_avg = state_avg[state_avg["total_qty"] > 0]
-    state_avg["Avg Value per Item"] = state_avg["total_value"] / state_avg["total_qty"]
-    state_avg = state_avg.nlargest(25, "Avg Value per Item").sort_values("Avg Value per Item", ascending=True)
-
-    diversity_fig = px.bar(
-        state_avg,
-        x="Avg Value per Item",
-        y="State",
-        orientation="h",
-        template=PLOTLY_TEMPLATE,
-        color_discrete_sequence=[COLORS["accent"]],
-        hover_data={"total_value": ":$,.0f", "total_qty": ":,"},
-    )
-    diversity_fig.update_layout(
-        yaxis=dict(title=""),
-        xaxis=dict(title="Average Value per Item ($)"),
-        margin=dict(l=0, r=10, t=10, b=0),
-        height=450,
-    )
-
-    # --- NEW CHART E5: Year-over-Year Growth Rate ---
-    yearly_val = df.dropna(subset=["Year"]).groupby("Year")["Acquisition Value"].sum().sort_index()
-    if len(yearly_val) > 1:
-        yoy_pct = yearly_val.pct_change().dropna() * 100
-        yoy_df = pd.DataFrame({"Year": yoy_pct.index.astype(int), "Growth Rate (%)": yoy_pct.values})
-        bar_colors = [COLORS["success"] if v >= 0 else COLORS["danger"] for v in yoy_df["Growth Rate (%)"]]
-
-        yoy_fig = go.Figure(
-            go.Bar(
-                x=yoy_df["Year"],
-                y=yoy_df["Growth Rate (%)"],
-                marker_color=bar_colors,
-                hovertemplate="Year: %{x}<br>Growth: %{y:.1f}%<extra></extra>",
-            )
-        )
-    else:
-        yoy_fig = go.Figure()
-    yoy_fig.update_layout(
-        template=PLOTLY_TEMPLATE,
-        xaxis=dict(title="Year", dtick=2),
-        yaxis=dict(title="Growth Rate (%)", zeroline=True, zerolinecolor="rgba(255,255,255,0.3)"),
-        margin=dict(l=0, r=10, t=10, b=0),
-        height=450,
-    )
-
-    return (
-        kpis,
-        choropleth,
-        top_items_fig,
-        timeline_fig,
-        treemap_fig,
-        agencies_fig,
-        percapita_fig,
-        demil_fig,
-        top_states_fig,
-        diversity_fig,
-        yoy_fig,
-    )
+    return treemap_fig, demil_fig

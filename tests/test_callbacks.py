@@ -5,7 +5,10 @@ into the loader cache. Each callback's return values are validated
 for correct types and structure.
 """
 
+import io
+import json
 import pytest
+import pandas as pd
 import plotly.graph_objects as go
 
 from app.data import loader
@@ -37,57 +40,172 @@ def seed_ecg_cache(mock_ecg_precomputed):
     loader._cache["ecg"] = mock_ecg_precomputed
 
 
+# ── Helper: generate store data from mock DataFrames ──────────────
+
+
+def make_equip_store(mock_df):
+    """Serialize a mock equipment DataFrame as the filter store would."""
+    state_value = mock_df.groupby("State")["Acquisition Value"].sum()
+    state_qty = mock_df.groupby("State")["Quantity"].sum()
+    kpis = {
+        "total_items": int(mock_df["Quantity"].sum()),
+        "total_value": float(mock_df["Acquisition Value"].sum()),
+        "n_agencies": int(mock_df["Agency Name"].nunique()),
+        "n_states": int(mock_df["State"].nunique()),
+    }
+    store = {
+        "df": mock_df.to_json(date_format="iso", orient="split"),
+        "state_value": state_value.to_json(),
+        "state_qty": state_qty.to_json(),
+        "kpis": kpis,
+    }
+    return json.dumps(store)
+
+
+def make_bases_store(mock_df):
+    """Serialize a mock bases DataFrame as the filter store would."""
+    df = mock_df.copy()
+    df["hovertext"] = (
+        "<b>" + df["Site Name"].fillna("") + "</b><br>"
+        + df["COMPONENT"].fillna("") + "<br>"
+        + df["State Terr"].fillna("") + "<br>"
+        + df["Oper Stat"].fillna("")
+    )
+    store = {
+        "df": df.to_json(date_format="iso", orient="split"),
+    }
+    return json.dumps(store)
+
+
+def make_health_store(mock_df):
+    """Serialize a mock healthcare DataFrame as the filter store would."""
+    spec_counts = mock_df["medical_specialty"].value_counts().reset_index()
+    spec_counts.columns = ["Specialty", "Count"]
+    spec_stats = (
+        mock_df.groupby("medical_specialty")
+        .agg(
+            volume=("medical_specialty", "size"),
+            avg_complexity=("transcription_length", "mean"),
+        )
+        .reset_index()
+    )
+    store = {
+        "df": mock_df.to_json(date_format="iso", orient="split"),
+        "spec_counts": spec_counts.to_json(orient="split"),
+        "spec_stats": spec_stats.to_json(orient="split"),
+    }
+    return json.dumps(store)
+
+
 # ═══════════════════════════════════════════════════════════════════
 # Equipment Tab Callbacks
 # ═══════════════════════════════════════════════════════════════════
 
 
 class TestEquipmentCallbacks:
-    def test_update_equipment_no_filters(self, seed_equipment_cache):
-        """Callback with no filters returns all 11 outputs."""
-        from app.tabs.tab_equipment import update_equipment
+    def test_filter_callback(self, seed_equipment_cache, mock_equipment_df):
+        """Filter callback returns valid JSON store data."""
+        from app.tabs.tab_equipment import update_equip_store
 
-        result = update_equipment(
+        result = update_equip_store(
             states=None,
             year_range=[2019, 2021],
             categories=None,
-            map_metric="value",
         )
-        assert len(result) == 11
+        assert result is not None
+        data = json.loads(result)
+        assert "df" in data
+        assert "kpis" in data
+        assert "state_value" in data
+        assert "state_qty" in data
+        df = pd.read_json(io.StringIO(data["df"]), orient="split")
+        assert len(df) > 0
 
-        # First output is KPI children (html component)
-        kpis = result[0]
-        assert kpis is not None
+    def test_kpi_callback(self, seed_equipment_cache, mock_equipment_df):
+        """KPI callback returns an HTML component."""
+        from app.tabs.tab_equipment import update_equip_kpis
 
-        # Remaining 10 outputs should be Plotly figures
-        for fig in result[1:]:
+        store_data = make_equip_store(mock_equipment_df)
+        result = update_equip_kpis(store_data)
+        assert result is not None
+
+    def test_maps_callback(self, seed_equipment_cache, mock_equipment_df):
+        """Maps callback returns 3 figures."""
+        from app.tabs.tab_equipment import update_equip_maps
+
+        store_data = make_equip_store(mock_equipment_df)
+        result = update_equip_maps(store_data, "value")
+        assert len(result) == 3
+        for fig in result:
             assert isinstance(fig, go.Figure)
 
-    def test_update_equipment_state_filter(self, seed_equipment_cache):
-        """Filtering by state should still return valid figures."""
-        from app.tabs.tab_equipment import update_equipment
+    def test_maps_callback_count_metric(self, seed_equipment_cache, mock_equipment_df):
+        """Maps callback with count metric returns valid figures."""
+        from app.tabs.tab_equipment import update_equip_maps
 
-        result = update_equipment(
+        store_data = make_equip_store(mock_equipment_df)
+        result = update_equip_maps(store_data, "count")
+        assert len(result) == 3
+
+    def test_bars_callback(self, seed_equipment_cache, mock_equipment_df):
+        """Bars callback returns 4 figures."""
+        from app.tabs.tab_equipment import update_equip_bars
+
+        store_data = make_equip_store(mock_equipment_df)
+        result = update_equip_bars(store_data)
+        assert len(result) == 4
+        for fig in result:
+            assert isinstance(fig, go.Figure)
+
+    def test_timeline_callback(self, seed_equipment_cache, mock_equipment_df):
+        """Timeline callback returns a figure."""
+        from app.tabs.tab_equipment import update_equip_timeline
+
+        store_data = make_equip_store(mock_equipment_df)
+        result = update_equip_timeline(store_data)
+        assert isinstance(result, go.Figure)
+
+    def test_categories_callback(self, seed_equipment_cache, mock_equipment_df):
+        """Categories callback returns 2 figures."""
+        from app.tabs.tab_equipment import update_equip_categories
+
+        store_data = make_equip_store(mock_equipment_df)
+        result = update_equip_categories(store_data)
+        assert len(result) == 2
+        for fig in result:
+            assert isinstance(fig, go.Figure)
+
+    def test_state_filter(self, seed_equipment_cache, mock_equipment_df):
+        """Filtering by state still works through the store."""
+        from app.tabs.tab_equipment import update_equip_store, update_equip_kpis
+
+        store_data = update_equip_store(
             states=["CA"],
             year_range=[2019, 2021],
             categories=None,
-            map_metric="count",
         )
-        assert len(result) == 11
-        for fig in result[1:]:
-            assert isinstance(fig, go.Figure)
+        result = update_equip_kpis(store_data)
+        assert result is not None
 
-    def test_update_equipment_category_filter(self, seed_equipment_cache):
+    def test_category_filter(self, seed_equipment_cache, mock_equipment_df):
         """Filtering by category narrows the data."""
-        from app.tabs.tab_equipment import update_equipment
+        from app.tabs.tab_equipment import update_equip_store, update_equip_bars
 
-        result = update_equipment(
+        store_data = update_equip_store(
             states=None,
             year_range=[2019, 2021],
             categories=["Weapons & Firearms"],
-            map_metric="value",
         )
-        assert len(result) == 11
+        result = update_equip_bars(store_data)
+        assert len(result) == 4
+
+    def test_none_store_returns_no_update(self, seed_equipment_cache):
+        """Passing None store data returns no_update."""
+        from dash import no_update
+        from app.tabs.tab_equipment import update_equip_kpis
+
+        result = update_equip_kpis(None)
+        assert result is no_update
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -96,31 +214,70 @@ class TestEquipmentCallbacks:
 
 
 class TestBasesCallbacks:
-    def test_update_bases_no_filters(self, seed_bases_cache):
-        """Callback with no filters returns 10 figure outputs."""
-        from app.tabs.tab_bases import update_bases
+    def test_filter_callback(self, seed_bases_cache, mock_bases_df):
+        """Filter callback returns valid JSON store data."""
+        from app.tabs.tab_bases import update_bases_filter
 
-        result = update_bases(
+        result = update_bases_filter(
             components=None,
             statuses=None,
             states=None,
             joints=None,
         )
-        assert len(result) == 10
+        assert result is not None
+
+    def test_maps_callback(self, seed_bases_cache, mock_bases_df):
+        """Maps callback returns 2 figures."""
+        from app.tabs.tab_bases import update_bases_maps
+
+        store_data = make_bases_store(mock_bases_df)
+        result = update_bases_maps(store_data)
+        assert len(result) == 2
         for fig in result:
             assert isinstance(fig, go.Figure)
 
-    def test_update_bases_component_filter(self, seed_bases_cache):
-        """Filtering by component returns valid figures."""
-        from app.tabs.tab_bases import update_bases
+    def test_summary_callback(self, seed_bases_cache, mock_bases_df):
+        """Summary callback returns 2 figures."""
+        from app.tabs.tab_bases import update_bases_summary
 
-        result = update_bases(
+        store_data = make_bases_store(mock_bases_df)
+        result = update_bases_summary(store_data)
+        assert len(result) == 2
+        for fig in result:
+            assert isinstance(fig, go.Figure)
+
+    def test_state_callback(self, seed_bases_cache, mock_bases_df):
+        """State callback returns 2 figures."""
+        from app.tabs.tab_bases import update_bases_state
+
+        store_data = make_bases_store(mock_bases_df)
+        result = update_bases_state(store_data)
+        assert len(result) == 2
+        for fig in result:
+            assert isinstance(fig, go.Figure)
+
+    def test_detail_callback(self, seed_bases_cache, mock_bases_df):
+        """Detail callback returns 4 figures."""
+        from app.tabs.tab_bases import update_bases_detail
+
+        store_data = make_bases_store(mock_bases_df)
+        result = update_bases_detail(store_data)
+        assert len(result) == 4
+        for fig in result:
+            assert isinstance(fig, go.Figure)
+
+    def test_component_filter(self, seed_bases_cache, mock_bases_df):
+        """Filtering by component works through the store."""
+        from app.tabs.tab_bases import update_bases_filter, update_bases_maps
+
+        store_data = update_bases_filter(
             components=["Army Active"],
             statuses=None,
             states=None,
             joints=None,
         )
-        assert len(result) == 10
+        result = update_bases_maps(store_data)
+        assert len(result) == 2
         for fig in result:
             assert isinstance(fig, go.Figure)
 
@@ -131,40 +288,64 @@ class TestBasesCallbacks:
 
 
 class TestHealthcareCallbacks:
-    def test_update_healthcare_no_filters(self, seed_healthcare_cache):
-        """Callback with no filters returns 7 outputs."""
-        from app.tabs.tab_healthcare import update_healthcare
+    def test_filter_callback(self, seed_healthcare_cache, mock_healthcare_df):
+        """Filter callback returns valid JSON store data."""
+        from app.tabs.tab_healthcare import filter_healthcare_data
 
-        result = update_healthcare(specialties=None, keyword=None)
-        assert len(result) == 7
+        result = filter_healthcare_data(specialties=None, keyword=None)
+        assert result is not None
 
-        # First 6 are figures
-        for fig in result[:6]:
+    def test_distribution_callback(self, seed_healthcare_cache, mock_healthcare_df):
+        """Distribution callback returns 2 figures."""
+        from app.tabs.tab_healthcare import update_health_distribution
+
+        store_data = make_health_store(mock_healthcare_df)
+        result = update_health_distribution(store_data)
+        assert len(result) == 2
+        for fig in result:
             assert isinstance(fig, go.Figure)
 
-        # Last one is table data (list of dicts)
-        table_data = result[6]
-        assert isinstance(table_data, list)
+    def test_analysis_callback(self, seed_healthcare_cache, mock_healthcare_df):
+        """Analysis callback returns 3 figures."""
+        from app.tabs.tab_healthcare import update_health_analysis
 
-    def test_update_healthcare_specialty_filter(self, seed_healthcare_cache):
+        store_data = make_health_store(mock_healthcare_df)
+        result = update_health_analysis(store_data)
+        assert len(result) == 3
+        for fig in result:
+            assert isinstance(fig, go.Figure)
+
+    def test_keywords_table_callback(self, seed_healthcare_cache, mock_healthcare_df):
+        """Keywords+table callback returns figure + list."""
+        from app.tabs.tab_healthcare import update_health_keywords_table
+
+        store_data = make_health_store(mock_healthcare_df)
+        result = update_health_keywords_table(store_data)
+        assert len(result) == 2
+        assert isinstance(result[0], go.Figure)
+        assert isinstance(result[1], list)
+
+    def test_specialty_filter(self, seed_healthcare_cache, mock_healthcare_df):
         """Filtering by specialty narrows results."""
-        from app.tabs.tab_healthcare import update_healthcare
+        from app.tabs.tab_healthcare import filter_healthcare_data, update_health_distribution
 
-        result = update_healthcare(
+        store_data = filter_healthcare_data(
             specialties=["Orthopedic"],
             keyword=None,
         )
-        assert len(result) == 7
+        result = update_health_distribution(store_data)
+        assert len(result) == 2
 
-    def test_update_healthcare_keyword_filter(self, seed_healthcare_cache):
+    def test_keyword_filter(self, seed_healthcare_cache, mock_healthcare_df):
         """Keyword search filters data by keyword match."""
-        from app.tabs.tab_healthcare import update_healthcare
+        from app.tabs.tab_healthcare import filter_healthcare_data, update_health_keywords_table
 
-        result = update_healthcare(
+        store_data = filter_healthcare_data(
             specialties=None,
             keyword="knee",
         )
-        assert len(result) == 7
+        result = update_health_keywords_table(store_data)
+        assert len(result) == 2
 
     def test_show_transcription_no_selection(self, seed_healthcare_cache):
         """No selection returns collapsed state."""
@@ -249,21 +430,64 @@ class TestEcgCallbacks:
 
 
 class TestCombinedCallbacks:
-    def test_update_combined_no_filters(self, seed_equipment_cache, seed_bases_cache):
-        """Combined callback returns 10 figures."""
-        from app.tabs.tab_combined import update_combined
+    def test_filter_callback(self, seed_equipment_cache, seed_bases_cache):
+        """Filter callback returns valid JSON store data."""
+        from app.tabs.tab_combined import update_combined_store
 
-        result = update_combined(regions=None, min_bases=0)
-        assert len(result) == 10
+        result = update_combined_store(regions=None, min_bases=0)
+        assert result is not None
+        data = json.loads(result)
+        assert "combined" in data
+        assert "branch_by_state" in data
+        assert "selected_states" in data
+
+    def test_maps_callback(self, seed_equipment_cache, seed_bases_cache):
+        """Maps callback returns 2 figures."""
+        from app.tabs.tab_combined import update_combined_store, update_combined_maps
+
+        store_data = update_combined_store(regions=None, min_bases=0)
+        result = update_combined_maps(store_data)
+        assert len(result) == 2
         for fig in result:
             assert isinstance(fig, go.Figure)
 
-    def test_update_combined_region_filter(self, seed_equipment_cache, seed_bases_cache):
-        """Region filter returns valid output."""
-        from app.tabs.tab_combined import update_combined
+    def test_scatter_callback(self, seed_equipment_cache, seed_bases_cache):
+        """Scatter callback returns 3 figures."""
+        from app.tabs.tab_combined import update_combined_store, update_combined_scatter
 
-        result = update_combined(regions=["South"], min_bases=0)
-        assert len(result) == 10
+        store_data = update_combined_store(regions=None, min_bases=0)
+        result = update_combined_scatter(store_data)
+        assert len(result) == 3
+        for fig in result:
+            assert isinstance(fig, go.Figure)
+
+    def test_bars_callback(self, seed_equipment_cache, seed_bases_cache):
+        """Bars callback returns 3 figures."""
+        from app.tabs.tab_combined import update_combined_store, update_combined_bars
+
+        store_data = update_combined_store(regions=None, min_bases=0)
+        result = update_combined_bars(store_data)
+        assert len(result) == 3
+        for fig in result:
+            assert isinstance(fig, go.Figure)
+
+    def test_advanced_callback(self, seed_equipment_cache, seed_bases_cache):
+        """Advanced callback returns 2 figures."""
+        from app.tabs.tab_combined import update_combined_store, update_combined_advanced
+
+        store_data = update_combined_store(regions=None, min_bases=0)
+        result = update_combined_advanced(store_data)
+        assert len(result) == 2
+        for fig in result:
+            assert isinstance(fig, go.Figure)
+
+    def test_region_filter(self, seed_equipment_cache, seed_bases_cache):
+        """Region filter returns valid output."""
+        from app.tabs.tab_combined import update_combined_store, update_combined_scatter
+
+        store_data = update_combined_store(regions=["South"], min_bases=0)
+        result = update_combined_scatter(store_data)
+        assert len(result) == 3
         for fig in result:
             assert isinstance(fig, go.Figure)
 

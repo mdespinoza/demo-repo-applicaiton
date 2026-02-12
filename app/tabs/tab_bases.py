@@ -1,10 +1,14 @@
 """Tab 3: Military Bases Map visualization."""
 
+import io
+import json
+
 import dash_bootstrap_components as dbc
-from dash import dcc, html, callback, Input, Output
+from dash import dcc, html, callback, Input, Output, no_update
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import pandas as pd
 
 from app.components.chart_container import chart_container
 from app.data.loader import load_bases
@@ -12,6 +16,13 @@ from app.logging_config import get_logger
 from app.config import PLOTLY_TEMPLATE, BRANCH_COLORS, COLORS, STATE_NAME_TO_ABBREV
 
 logger = get_logger(__name__)
+
+
+def get_branch_color(comp):
+    for branch, color in BRANCH_COLORS.items():
+        if branch.lower() in comp.lower():
+            return color
+    return BRANCH_COLORS.get("Other", "#9E9E9E")
 
 
 def layout():
@@ -23,6 +34,8 @@ def layout():
 
     return html.Div(
         [
+            # Filtered data store
+            dcc.Store(id="bases-filtered-store"),
             # Filters
             dbc.Row(
                 [
@@ -220,23 +233,17 @@ def layout():
     )
 
 
+# ---------------------------------------------------------------------------
+# Filter callback: writes filtered DataFrame to dcc.Store
+# ---------------------------------------------------------------------------
 @callback(
-    Output("bases-map", "figure"),
-    Output("bases-by-state", "figure"),
-    Output("bases-by-branch", "figure"),
-    Output("bases-sunburst", "figure"),
-    Output("bases-small-multiples", "figure"),
-    Output("bases-density", "figure"),
-    Output("bases-size-box", "figure"),
-    Output("bases-joint-analysis", "figure"),
-    Output("bases-area-perimeter", "figure"),
-    Output("bases-status-donut", "figure"),
+    Output("bases-filtered-store", "data"),
     Input("bases-component-filter", "value"),
     Input("bases-status-filter", "value"),
     Input("bases-state-filter", "value"),
     Input("bases-joint-filter", "value"),
 )
-def update_bases(components, statuses, states, joints):
+def update_bases_filter(components, statuses, states, joints):
     logger.info(
         "Bases callback: components=%s, statuses=%s, states=%s, joints=%s", components, statuses, states, joints
     )
@@ -251,13 +258,37 @@ def update_bases(components, statuses, states, joints):
     if joints:
         df = df[df["Joint Base"].isin(joints)]
 
-    # Map - assign colors
-    def get_branch_color(comp):
-        for branch, color in BRANCH_COLORS.items():
-            if branch.lower() in comp.lower():
-                return color
-        return BRANCH_COLORS.get("Other", "#9E9E9E")
+    df = df.copy()
+    # Pre-compute hovertext using vectorized string ops (replaces row-wise .apply)
+    df["hovertext"] = (
+        "<b>" + df["Site Name"].fillna("") + "</b><br>"
+        + df["COMPONENT"].fillna("") + "<br>"
+        + df["State Terr"].fillna("") + "<br>"
+        + df["Oper Stat"].fillna("")
+    )
 
+    store = {
+        "df": df.to_json(date_format='iso', orient='split'),
+    }
+    return json.dumps(store)
+
+
+# ---------------------------------------------------------------------------
+# Map + Density callback (2 outputs)
+# ---------------------------------------------------------------------------
+@callback(
+    Output("bases-map", "figure"),
+    Output("bases-density", "figure"),
+    Input("bases-filtered-store", "data"),
+)
+def update_bases_maps(store_data):
+    if store_data is None:
+        return no_update, no_update
+
+    data = json.loads(store_data)
+    df = pd.read_json(io.StringIO(data["df"]), orient='split')
+
+    # Map - assign colors
     df_map = df.copy()
 
     map_fig = go.Figure()
@@ -270,10 +301,7 @@ def update_bases(components, statuses, states, joints):
                 mode="markers",
                 marker=dict(size=6, color=get_branch_color(comp), opacity=0.7),
                 name=comp,
-                hovertext=comp_df.apply(
-                    lambda r: f"<b>{r['Site Name']}</b><br>{r['COMPONENT']}<br>{r['State Terr']}<br>{r['Oper Stat']}",
-                    axis=1,
-                ),
+                hovertext=comp_df["hovertext"],
                 hoverinfo="text",
             )
         )
@@ -296,6 +324,138 @@ def update_bases(components, statuses, states, joints):
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
         template=PLOTLY_TEMPLATE,
     )
+
+    # --- Base Density (state-level choropleth) ---
+    df_density = df.copy()
+    df_density["state_abbrev"] = df_density["State Terr"].map(STATE_NAME_TO_ABBREV)
+    state_counts = df_density.groupby("state_abbrev").size().reset_index(name="Base Count")
+
+    density_fig = go.Figure()
+    density_fig.add_trace(
+        go.Choropleth(
+            locations=state_counts["state_abbrev"],
+            z=state_counts["Base Count"],
+            locationmode="USA-states",
+            colorscale="Hot",
+            reversescale=True,
+            colorbar=dict(title="Bases", thickness=15),
+            hovertemplate="<b>%{location}</b><br>Bases: %{z}<extra></extra>",
+        )
+    )
+    # Overlay individual base markers for detail
+    density_fig.add_trace(
+        go.Scattergeo(
+            lat=df["lat"],
+            lon=df["lon"],
+            mode="markers",
+            marker=dict(size=3, color="white", opacity=0.4),
+            hovertext=df["Site Name"],
+            hoverinfo="text",
+            showlegend=False,
+        )
+    )
+    density_fig.update_layout(
+        template=PLOTLY_TEMPLATE,
+        geo=dict(
+            scope="usa",
+            bgcolor="rgba(0,0,0,0)",
+            showland=True,
+            landcolor="#1A2332",
+            showlakes=True,
+            lakecolor="#0F1726",
+            showcountries=True,
+            countrycolor="rgba(99,125,175,0.2)",
+            showsubunits=True,
+            subunitcolor="rgba(99,125,175,0.15)",
+        ),
+        margin=dict(l=0, r=0, t=10, b=0),
+        height=500,
+    )
+
+    return map_fig, density_fig
+
+
+# ---------------------------------------------------------------------------
+# Summary callback: by-branch + status donut (2 outputs)
+# ---------------------------------------------------------------------------
+@callback(
+    Output("bases-by-branch", "figure"),
+    Output("bases-status-donut", "figure"),
+    Input("bases-filtered-store", "data"),
+)
+def update_bases_summary(store_data):
+    if store_data is None:
+        return no_update, no_update
+
+    data = json.loads(store_data)
+    df = pd.read_json(io.StringIO(data["df"]), orient='split')
+
+    # Bases by branch (stacked by status)
+    branch_status = df.groupby(["COMPONENT", "Oper Stat"]).size().reset_index(name="Count")
+    branch_fig = px.bar(
+        branch_status,
+        x="COMPONENT",
+        y="Count",
+        color="Oper Stat",
+        template=PLOTLY_TEMPLATE,
+    )
+    branch_fig.update_layout(
+        barmode="stack",
+        xaxis=dict(title=""),
+        yaxis=dict(title="Number of Bases"),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        margin=dict(l=0, r=10, t=10, b=0),
+        height=450,
+    )
+
+    # --- Operational Status Donut ---
+    status_counts = df["Oper Stat"].value_counts().reset_index()
+    status_counts.columns = ["Status", "Count"]
+
+    status_fig = go.Figure(
+        go.Pie(
+            labels=status_counts["Status"],
+            values=status_counts["Count"],
+            hole=0.45,
+            textinfo="label+percent",
+            textposition="outside",
+            marker=dict(
+                colors=[
+                    COLORS["success"],
+                    COLORS["danger"],
+                    COLORS["warning"],
+                    COLORS["secondary"],
+                    COLORS["accent"],
+                    COLORS["info"],
+                ]
+            ),
+        )
+    )
+    status_fig.update_layout(
+        template=PLOTLY_TEMPLATE,
+        margin=dict(l=0, r=0, t=10, b=0),
+        height=450,
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    )
+
+    return branch_fig, status_fig
+
+
+# ---------------------------------------------------------------------------
+# State callback: by-state + joint analysis (2 outputs)
+# ---------------------------------------------------------------------------
+@callback(
+    Output("bases-by-state", "figure"),
+    Output("bases-joint-analysis", "figure"),
+    Input("bases-filtered-store", "data"),
+)
+def update_bases_state(store_data):
+    if store_data is None:
+        return no_update, no_update
+
+    data = json.loads(store_data)
+    df = pd.read_json(io.StringIO(data["df"]), orient='split')
 
     # Bases by state (top 20, stacked by component)
     state_comp = df.groupby(["State Terr", "COMPONENT"]).size().reset_index(name="Count")
@@ -320,23 +480,46 @@ def update_bases(components, statuses, states, joints):
         height=450,
     )
 
-    # Bases by branch (stacked by status)
-    branch_status = df.groupby(["COMPONENT", "Oper Stat"]).size().reset_index(name="Count")
-    branch_fig = px.bar(
-        branch_status,
-        x="COMPONENT",
-        y="Count",
-        color="Oper Stat",
-        template=PLOTLY_TEMPLATE,
-    )
-    branch_fig.update_layout(
-        barmode="stack",
+    # --- Joint Base Analysis ---
+    joint_comp = df.groupby(["Joint Base", "COMPONENT"]).size().reset_index(name="Count")
+    if len(joint_comp) > 0:
+        joint_fig = px.bar(
+            joint_comp,
+            x="COMPONENT",
+            y="Count",
+            color="Joint Base",
+            barmode="group",
+            template=PLOTLY_TEMPLATE,
+        )
+    else:
+        joint_fig = go.Figure()
+    joint_fig.update_layout(
         xaxis=dict(title=""),
         yaxis=dict(title="Number of Bases"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
         margin=dict(l=0, r=10, t=10, b=0),
         height=450,
     )
+
+    return state_fig, joint_fig
+
+
+# ---------------------------------------------------------------------------
+# Detail callback: sunburst + small multiples + size box + area-perimeter (4 outputs)
+# ---------------------------------------------------------------------------
+@callback(
+    Output("bases-sunburst", "figure"),
+    Output("bases-small-multiples", "figure"),
+    Output("bases-size-box", "figure"),
+    Output("bases-area-perimeter", "figure"),
+    Input("bases-filtered-store", "data"),
+)
+def update_bases_detail(store_data):
+    if store_data is None:
+        return no_update, no_update, no_update, no_update
+
+    data = json.loads(store_data)
+    df = pd.read_json(io.StringIO(data["df"]), orient='split')
 
     # Sunburst
     sun_df = df[["State Terr", "COMPONENT", "Site Name"]].copy()
@@ -411,54 +594,7 @@ def update_bases(components, statuses, states, joints):
         showlegend=False,
     )
 
-    # --- NEW CHART B3: Base Density (state-level choropleth) ---
-    df_density = df.copy()
-    df_density["state_abbrev"] = df_density["State Terr"].map(STATE_NAME_TO_ABBREV)
-    state_counts = df_density.groupby("state_abbrev").size().reset_index(name="Base Count")
-
-    density_fig = go.Figure()
-    density_fig.add_trace(
-        go.Choropleth(
-            locations=state_counts["state_abbrev"],
-            z=state_counts["Base Count"],
-            locationmode="USA-states",
-            colorscale="Hot",
-            reversescale=True,
-            colorbar=dict(title="Bases", thickness=15),
-            hovertemplate="<b>%{location}</b><br>Bases: %{z}<extra></extra>",
-        )
-    )
-    # Overlay individual base markers for detail
-    density_fig.add_trace(
-        go.Scattergeo(
-            lat=df["lat"],
-            lon=df["lon"],
-            mode="markers",
-            marker=dict(size=3, color="white", opacity=0.4),
-            hovertext=df["Site Name"],
-            hoverinfo="text",
-            showlegend=False,
-        )
-    )
-    density_fig.update_layout(
-        template=PLOTLY_TEMPLATE,
-        geo=dict(
-            scope="usa",
-            bgcolor="rgba(0,0,0,0)",
-            showland=True,
-            landcolor="#1A2332",
-            showlakes=True,
-            lakecolor="#0F1726",
-            showcountries=True,
-            countrycolor="rgba(99,125,175,0.2)",
-            showsubunits=True,
-            subunitcolor="rgba(99,125,175,0.15)",
-        ),
-        margin=dict(l=0, r=0, t=10, b=0),
-        height=500,
-    )
-
-    # --- NEW CHART B1: Base Size by Branch ---
+    # --- Base Size by Branch ---
     area_df = df[df["AREA"] > 0].copy()
     if len(area_df) > 0:
         size_box_fig = px.box(
@@ -479,28 +615,7 @@ def update_bases(components, statuses, states, joints):
         height=450,
     )
 
-    # --- NEW CHART B2: Joint Base Analysis ---
-    joint_comp = df.groupby(["Joint Base", "COMPONENT"]).size().reset_index(name="Count")
-    if len(joint_comp) > 0:
-        joint_fig = px.bar(
-            joint_comp,
-            x="COMPONENT",
-            y="Count",
-            color="Joint Base",
-            barmode="group",
-            template=PLOTLY_TEMPLATE,
-        )
-    else:
-        joint_fig = go.Figure()
-    joint_fig.update_layout(
-        xaxis=dict(title=""),
-        yaxis=dict(title="Number of Bases"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-        margin=dict(l=0, r=10, t=10, b=0),
-        height=450,
-    )
-
-    # --- NEW CHART B4: Area vs Perimeter Scatter ---
+    # --- Area vs Perimeter Scatter ---
     ap_df = df[(df["AREA"] > 0) & (df["PERIMETER"] > 0)].copy()
     if len(ap_df) > 0:
         ap_fig = px.scatter(
@@ -524,46 +639,4 @@ def update_bases(components, statuses, states, joints):
         height=450,
     )
 
-    # --- NEW CHART B5: Operational Status Donut ---
-    status_counts = df["Oper Stat"].value_counts().reset_index()
-    status_counts.columns = ["Status", "Count"]
-
-    status_fig = go.Figure(
-        go.Pie(
-            labels=status_counts["Status"],
-            values=status_counts["Count"],
-            hole=0.45,
-            textinfo="label+percent",
-            textposition="outside",
-            marker=dict(
-                colors=[
-                    COLORS["success"],
-                    COLORS["danger"],
-                    COLORS["warning"],
-                    COLORS["secondary"],
-                    COLORS["accent"],
-                    COLORS["info"],
-                ]
-            ),
-        )
-    )
-    status_fig.update_layout(
-        template=PLOTLY_TEMPLATE,
-        margin=dict(l=0, r=0, t=10, b=0),
-        height=450,
-        showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-    )
-
-    return (
-        map_fig,
-        state_fig,
-        branch_fig,
-        sunburst_fig,
-        sm_fig,
-        density_fig,
-        size_box_fig,
-        joint_fig,
-        ap_fig,
-        status_fig,
-    )
+    return sunburst_fig, sm_fig, size_box_fig, ap_fig

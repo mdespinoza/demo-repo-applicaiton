@@ -1,10 +1,13 @@
 """Tab 4: Healthcare Documentation visualization."""
 
+import io
+import json
 import re
 from collections import Counter
 
 import dash_bootstrap_components as dbc
-from dash import dcc, html, callback, Input, Output, State, dash_table
+from dash import dcc, html, callback, Input, Output, State, dash_table, no_update
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
@@ -48,6 +51,8 @@ def layout():
 
     return html.Div(
         [
+            # Filtered data store
+            dcc.Store(id="health-filtered-store"),
             # Filters
             dbc.Row(
                 [
@@ -274,19 +279,14 @@ def layout():
     )
 
 
+# --- Filter callback: writes filtered DataFrame to dcc.Store ---
 @callback(
-    Output("health-specialty-dist", "figure"),
-    Output("health-demand-quadrant", "figure"),
-    Output("health-boxplot", "figure"),
-    Output("health-pareto", "figure"),
-    Output("health-resource-index", "figure"),
-    Output("health-keywords", "figure"),
-    Output("health-datatable", "data"),
+    Output("health-filtered-store", "data"),
     Input("health-specialty-filter", "value"),
     Input("health-keyword-search", "value"),
 )
-def update_healthcare(specialties, keyword):
-    logger.info("Healthcare callback: specialties=%s, keyword=%s", specialties, keyword)
+def filter_healthcare_data(specialties, keyword):
+    logger.info("Healthcare filter callback: specialties=%s, keyword=%s", specialties, keyword)
     df = load_healthcare()
 
     if specialties:
@@ -294,9 +294,42 @@ def update_healthcare(specialties, keyword):
     if keyword:
         df = df[df["keywords"].str.contains(keyword, case=False, na=False)]
 
-    # --- Specialty Distribution ---
+    # Pre-compute specialty stats shared by multiple callbacks
     spec_counts = df["medical_specialty"].value_counts().reset_index()
     spec_counts.columns = ["Specialty", "Count"]
+
+    spec_stats = (
+        df.groupby("medical_specialty")
+        .agg(
+            volume=("medical_specialty", "size"),
+            avg_complexity=("transcription_length", "mean"),
+        )
+        .reset_index()
+    )
+
+    store = {
+        "df": df.to_json(date_format="iso", orient="split"),
+        "spec_counts": spec_counts.to_json(orient="split"),
+        "spec_stats": spec_stats.to_json(orient="split"),
+    }
+    return json.dumps(store)
+
+
+# --- Specialty distribution + box plot (2 outputs) ---
+@callback(
+    Output("health-specialty-dist", "figure"),
+    Output("health-boxplot", "figure"),
+    Input("health-filtered-store", "data"),
+)
+def update_health_distribution(store_data):
+    if store_data is None:
+        return no_update, no_update
+
+    data = json.loads(store_data)
+    df = pd.read_json(io.StringIO(data["df"]), orient="split")
+    spec_counts = pd.read_json(io.StringIO(data["spec_counts"]), orient="split")
+
+    # --- Specialty Distribution (uses pre-computed spec_counts) ---
     spec_fig = px.bar(
         spec_counts,
         x="Count",
@@ -312,30 +345,56 @@ def update_healthcare(specialties, keyword):
         height=500,
     )
 
-    # --- Resource Demand Quadrant ---
-    # x = case volume, y = avg complexity (transcription length)
-    spec_stats = (
-        df.groupby("medical_specialty")
-        .agg(
-            volume=("medical_specialty", "size"),
-            avg_complexity=("transcription_length", "mean"),
-        )
-        .reset_index()
+    # --- Box Plot ---
+    top_specs = spec_counts.nlargest(15, "Count")["Specialty"]
+    box_df = df[df["medical_specialty"].isin(top_specs)]
+    box_fig = px.box(
+        box_df,
+        x="medical_specialty",
+        y="transcription_length",
+        color="medical_specialty",
+        template=PLOTLY_TEMPLATE,
+    )
+    box_fig.update_layout(
+        xaxis=dict(title="", tickangle=-45),
+        yaxis=dict(title="Transcription Length (chars)"),
+        showlegend=False,
+        margin=dict(l=0, r=10, t=10, b=80),
+        height=450,
     )
 
+    return spec_fig, box_fig
+
+
+# --- Demand quadrant + pareto + resource index (3 outputs) ---
+@callback(
+    Output("health-demand-quadrant", "figure"),
+    Output("health-pareto", "figure"),
+    Output("health-resource-index", "figure"),
+    Input("health-filtered-store", "data"),
+)
+def update_health_analysis(store_data):
+    if store_data is None:
+        return no_update, no_update, no_update
+
+    data = json.loads(store_data)
+    df = pd.read_json(io.StringIO(data["df"]), orient="split")
+    spec_stats = pd.read_json(io.StringIO(data["spec_stats"]), orient="split")
+    spec_counts = pd.read_json(io.StringIO(data["spec_counts"]), orient="split")
+
+    # --- Resource Demand Quadrant (uses pre-computed spec_stats) ---
     med_vol = spec_stats["volume"].median()
     med_comp = spec_stats["avg_complexity"].median()
 
-    def assign_quadrant(row):
-        if row["volume"] >= med_vol and row["avg_complexity"] >= med_comp:
-            return "High Volume + Complex"
-        elif row["volume"] >= med_vol:
-            return "High Volume"
-        elif row["avg_complexity"] >= med_comp:
-            return "Complex Cases"
-        return "Low Priority"
+    # Vectorized quadrant assignment (replaces row-wise .apply())
+    conditions = [
+        (spec_stats["volume"] >= med_vol) & (spec_stats["avg_complexity"] >= med_comp),
+        (spec_stats["volume"] >= med_vol),
+        (spec_stats["avg_complexity"] >= med_comp),
+    ]
+    choices = ["High Volume + Complex", "High Volume", "Complex Cases"]
+    spec_stats["Quadrant"] = np.select(conditions, choices, default="Low Priority")
 
-    spec_stats["Quadrant"] = spec_stats.apply(assign_quadrant, axis=1)
     quadrant_colors = {
         "High Volume + Complex": COLORS["danger"],
         "High Volume": COLORS["warning"],
@@ -363,25 +422,7 @@ def update_healthcare(specialties, keyword):
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0, font=dict(size=10)),
     )
 
-    # --- Box Plot ---
-    top_specs = df["medical_specialty"].value_counts().nlargest(15).index
-    box_df = df[df["medical_specialty"].isin(top_specs)]
-    box_fig = px.box(
-        box_df,
-        x="medical_specialty",
-        y="transcription_length",
-        color="medical_specialty",
-        template=PLOTLY_TEMPLATE,
-    )
-    box_fig.update_layout(
-        xaxis=dict(title="", tickangle=-45),
-        yaxis=dict(title="Transcription Length (chars)"),
-        showlegend=False,
-        margin=dict(l=0, r=10, t=10, b=80),
-        height=450,
-    )
-
-    # --- Workload Pareto ---
+    # --- Workload Pareto (uses pre-computed spec_counts) ---
     pareto_df = spec_counts.sort_values("Count", ascending=False).reset_index(drop=True)
     pareto_df["Cumulative %"] = pareto_df["Count"].cumsum() / pareto_df["Count"].sum() * 100
     # Show top 20 for readability
@@ -446,6 +487,22 @@ def update_healthcare(specialties, keyword):
         resource_fig = go.Figure()
         resource_fig.update_layout(margin=dict(l=0, r=10, t=10, b=0), height=450)
 
+    return quadrant_fig, pareto_fig, resource_fig
+
+
+# --- Keywords + datatable (2 outputs) ---
+@callback(
+    Output("health-keywords", "figure"),
+    Output("health-datatable", "data"),
+    Input("health-filtered-store", "data"),
+)
+def update_health_keywords_table(store_data):
+    if store_data is None:
+        return no_update, no_update
+
+    data = json.loads(store_data)
+    df = pd.read_json(io.StringIO(data["df"]), orient="split")
+
     # --- Top 30 Medical Keywords (cleaned) ---
     all_keywords = _extract_keywords(df)
     kw_counts = Counter(all_keywords).most_common(30)
@@ -473,7 +530,7 @@ def update_healthcare(specialties, keyword):
         "records"
     )
 
-    return spec_fig, quadrant_fig, box_fig, pareto_fig, resource_fig, kw_fig, table_data
+    return kw_fig, table_data
 
 
 @callback(
