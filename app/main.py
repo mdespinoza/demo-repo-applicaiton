@@ -89,11 +89,47 @@ app.layout = html.Div(
                         id="main-tabs",
                         active_tab="tab-equipment",
                     ),
-                    html.Div(id="tab-content", role="tabpanel", **{"aria-live": "polite"}),
+                    dcc.Loading(
+                        html.Div(id="tab-content", role="tabpanel", **{"aria-live": "polite"}),
+                        type="default",
+                        fullscreen=False,
+                        color="#38BDF8",
+                        parent_className="tab-loading-wrapper",
+                        overlay_style={
+                            "visibility": "visible",
+                            "opacity": 1,
+                            "backgroundColor": "rgba(11, 15, 25, 0.85)",
+                            "backdropFilter": "blur(4px)",
+                        },
+                    ),
                 ],
                 fluid=True,
             ),
             role="main",
+        ),
+        # Footer
+        html.Footer(
+            dbc.Container(
+                html.Div(
+                    [
+                        html.Span("Command Center", className="footer-brand"),
+                        html.Div(
+                            [
+                                html.Span("Dash 2.17"),
+                                html.Span(className="footer-dot"),
+                                html.Span("Plotly"),
+                                html.Span(className="footer-dot"),
+                                html.Span("Bootstrap"),
+                            ],
+                            className="footer-links",
+                        ),
+                    ],
+                    className="footer-inner",
+                ),
+                fluid=True,
+            ),
+            className="app-footer",
+            role="contentinfo",
         ),
     ]
 )
@@ -174,4 +210,4 @@ if __name__ == "__main__":
     init_error_tracking()
     logger.info("Starting Tactical Command Center...")
     logger.info("Open http://%s:%s in your browser", DASH_HOST, DASH_PORT)
-    app.run(debug=DASH_DEBUG, host=DASH_HOST, port=DASH_PORT)
+    app.run(debug=DASH_DEBUG, host=DASH_HOST, port=DASH_PORT, dev_tools_ui=False)
