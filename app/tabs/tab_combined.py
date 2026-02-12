@@ -4,7 +4,7 @@ import io
 import json
 
 import dash_bootstrap_components as dbc
-from dash import dcc, html, callback, Input, Output, no_update
+from dash import dcc, html, callback, Input, Output, State, no_update
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -72,8 +72,9 @@ def layout():
     """
     return html.Div(
         [
-            # --- Intermediate data store ---
+            # --- Intermediate data store + CSV download ---
             dcc.Store(id="combined-filtered-store"),
+            dcc.Download(id="combined-download-csv"),
             # --- NEW FILTER PANEL ---
             dbc.Row(
                 [
@@ -106,6 +107,26 @@ def layout():
                     ),
                 ],
                 className="filter-panel",
+                role="search",
+                **{"aria-label": "Combined data filters"},
+            ),
+            # Export button
+            dbc.Row(
+                dbc.Col(
+                    html.Button(
+                        [
+                            html.I(className="bi bi-download me-2",
+                                   **{"aria-hidden": "true"}),
+                            "Export Combined Data (CSV)",
+                        ],
+                        id="combined-export-btn",
+                        className="btn btn-outline-info btn-sm",
+                        **{"aria-label": "Download filtered combined data as CSV"},
+                    ),
+                    width="auto",
+                ),
+                className="mb-2",
+                justify="end",
             ),
             # --- Overview ---
             dbc.Row(
@@ -772,3 +793,21 @@ def update_combined_advanced(store_data):
     )
 
     return heatmap_fig, radar_fig
+
+
+# ---------------------------------------------------------------------------
+# CSV Export callback
+# ---------------------------------------------------------------------------
+@callback(
+    Output("combined-download-csv", "data"),
+    Input("combined-export-btn", "n_clicks"),
+    State("combined-filtered-store", "data"),
+    prevent_initial_call=True,
+)
+def export_combined_csv(n_clicks, store_data):
+    """Export currently filtered combined data as a CSV download."""
+    if not store_data:
+        return no_update
+    data = json.loads(store_data)
+    combined = pd.read_json(io.StringIO(data["combined"]), orient="split")
+    return dcc.send_data_frame(combined.to_csv, "combined_intel.csv", index=False)

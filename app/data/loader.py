@@ -631,3 +631,75 @@ def _precompute_ecg():
     except Exception:
         logger.exception("Failed to precompute ECG data")
         return None
+
+
+def get_cache_info():
+    """Return cache status information for all datasets.
+
+    Returns:
+        list[dict]: Status dict per dataset with name, memory/parquet/source info.
+    """
+    from datetime import datetime
+
+    datasets = [
+        {"name": "Equipment", "key": "equipment", "cache": EQUIPMENT_CACHE, "source": EQUIPMENT_CSV},
+        {"name": "Bases", "key": "bases", "cache": BASES_CACHE, "source": BASES_CSV},
+        {"name": "Healthcare", "key": "healthcare", "cache": HEALTHCARE_CACHE, "source": HEALTHCARE_CSV},
+        {"name": "ECG", "key": "ecg", "cache": ECG_CACHE, "source": ECG_DIR},
+    ]
+    info = []
+    for ds in datasets:
+        entry = {"name": ds["name"], "in_memory": ds["key"] in _cache}
+        # Memory cache row count
+        if ds["key"] in _cache:
+            cached = _cache[ds["key"]]
+            if isinstance(cached, pd.DataFrame):
+                entry["memory_rows"] = len(cached)
+            elif isinstance(cached, dict):
+                entry["memory_rows"] = "precomputed"
+            else:
+                entry["memory_rows"] = "N/A"
+        else:
+            entry["memory_rows"] = None
+
+        # Parquet/JSON cache status
+        if os.path.exists(ds["cache"]):
+            stat = os.stat(ds["cache"])
+            entry["cache_exists"] = True
+            entry["cache_size_mb"] = round(stat.st_size / (1024 * 1024), 2)
+            entry["cache_modified"] = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            entry["cache_exists"] = False
+            entry["cache_size_mb"] = 0
+            entry["cache_modified"] = None
+
+        # Source file status
+        source = ds["source"]
+        if os.path.isdir(source):
+            entry["source_exists"] = True
+            entry["source_modified"] = "directory"
+        elif os.path.exists(source):
+            stat = os.stat(source)
+            entry["source_exists"] = True
+            entry["source_modified"] = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            entry["source_exists"] = False
+            entry["source_modified"] = None
+
+        info.append(entry)
+    return info
+
+
+def clear_cache(dataset_key=None):
+    """Clear in-memory cache for a specific dataset or all datasets.
+
+    Args:
+        dataset_key: Optional key ('equipment', 'bases', 'healthcare', 'ecg').
+                     If None, clears all.
+    """
+    if dataset_key:
+        _cache.pop(dataset_key, None)
+        logger.info("Cleared memory cache for: %s", dataset_key)
+    else:
+        _cache.clear()
+        logger.info("Cleared all memory caches")

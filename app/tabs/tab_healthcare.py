@@ -56,8 +56,9 @@ def layout():
 
     return html.Div(
         [
-            # Filtered data store
+            # Filtered data store + CSV download
             dcc.Store(id="health-filtered-store"),
+            dcc.Download(id="health-download-csv"),
             # Filters
             dbc.Row(
                 [
@@ -88,6 +89,26 @@ def layout():
                     ),
                 ],
                 className="filter-panel",
+                role="search",
+                **{"aria-label": "Healthcare data filters"},
+            ),
+            # Export button
+            dbc.Row(
+                dbc.Col(
+                    html.Button(
+                        [
+                            html.I(className="bi bi-download me-2",
+                                   **{"aria-hidden": "true"}),
+                            "Export Filtered Data (CSV)",
+                        ],
+                        id="health-export-btn",
+                        className="btn btn-outline-info btn-sm",
+                        **{"aria-label": "Download filtered healthcare data as CSV"},
+                    ),
+                    width="auto",
+                ),
+                className="mb-2",
+                justify="end",
             ),
             # Specialty distribution + Resource demand quadrant
             dbc.Row(
@@ -202,7 +223,7 @@ def layout():
                                             target="health-datatable-info-icon",
                                             placement="right",
                                         ),
-                                        dash_table.DataTable(
+                                        dcc.Loading(dash_table.DataTable(
                                             id="health-datatable",
                                             columns=[
                                                 {"name": "ID", "id": "Serial No"},
@@ -235,7 +256,7 @@ def layout():
                                                 {"if": {"row_index": "odd"}, "backgroundColor": "#111827"},
                                             ],
                                             row_selectable="single",
-                                        ),
+                                        ), type="circle", color="#38BDF8"),
                                     ]
                                 ),
                                 className="chart-card",
@@ -256,15 +277,19 @@ def layout():
                                         dbc.CardBody(
                                             [
                                                 html.H5("Full Transcription", className="chart-title"),
-                                                html.Div(
-                                                    id="health-transcription-text",
-                                                    style={
-                                                        "maxHeight": "400px",
-                                                        "overflowY": "auto",
-                                                        "whiteSpace": "pre-wrap",
-                                                        "fontSize": "13px",
-                                                        "lineHeight": "1.6",
-                                                    },
+                                                dcc.Loading(
+                                                    html.Div(
+                                                        id="health-transcription-text",
+                                                        style={
+                                                            "maxHeight": "400px",
+                                                            "overflowY": "auto",
+                                                            "whiteSpace": "pre-wrap",
+                                                            "fontSize": "13px",
+                                                            "lineHeight": "1.6",
+                                                        },
+                                                    ),
+                                                    type="circle",
+                                                    color="#38BDF8",
                                                 ),
                                             ]
                                         ),
@@ -597,3 +622,21 @@ def show_transcription(selected_rows, data):
 
     transcription = record.iloc[0].get("transcription", "No transcription available.")
     return True, str(transcription)
+
+
+# ---------------------------------------------------------------------------
+# CSV Export callback
+# ---------------------------------------------------------------------------
+@callback(
+    Output("health-download-csv", "data"),
+    Input("health-export-btn", "n_clicks"),
+    State("health-filtered-store", "data"),
+    prevent_initial_call=True,
+)
+def export_healthcare_csv(n_clicks, store_data):
+    """Export currently filtered healthcare data as a CSV download."""
+    if not store_data:
+        return no_update
+    data = json.loads(store_data)
+    df = pd.read_json(io.StringIO(data["df"]), orient="split")
+    return dcc.send_data_frame(df.to_csv, "healthcare_records.csv", index=False)

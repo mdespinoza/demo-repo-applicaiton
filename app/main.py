@@ -2,15 +2,19 @@
 
 import sys
 import os
+from urllib.parse import parse_qs, urlencode
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import dash  # noqa: E402
-from dash import html, Input, Output  # noqa: E402
+from dash import dcc, html, Input, Output, no_update  # noqa: E402
 import dash_bootstrap_components as dbc  # noqa: E402
 
-from app.tabs import tab_instructions, tab_equipment, tab_ecg, tab_bases, tab_healthcare, tab_combined  # noqa: E402
+from app.tabs import (  # noqa: E402
+    tab_instructions, tab_equipment, tab_ecg, tab_bases,
+    tab_healthcare, tab_combined, tab_admin,
+)
 
 # Initialize Dash app
 app = dash.Dash(
@@ -33,8 +37,12 @@ register_metrics_endpoint(server)
 # App layout
 app.layout = html.Div(
     [
+        # Skip to content link (accessibility)
+        html.A("Skip to main content", href="#tab-content", className="skip-link"),
+        # URL state persistence
+        dcc.Location(id="url", refresh=False),
         # Header
-        html.Div(
+        html.Header(
             [
                 dbc.Container(
                     [
@@ -56,28 +64,69 @@ app.layout = html.Div(
                 ),
             ],
             className="app-header",
+            role="banner",
         ),
         # Tabs — grouped: Military > Medical > Combined
-        dbc.Container(
-            [
-                dbc.Tabs(
-                    [
-                        dbc.Tab(label="Instructions", tab_id="tab-instructions"),
-                        dbc.Tab(label="Equipment Transfers", tab_id="tab-equipment"),
-                        dbc.Tab(label="Installations Map", tab_id="tab-bases"),
-                        dbc.Tab(label="ECG Analysis", tab_id="tab-ecg"),
-                        dbc.Tab(label="Medical Records", tab_id="tab-healthcare"),
-                        dbc.Tab(label="Combined Intel", tab_id="tab-combined"),
-                    ],
-                    id="main-tabs",
-                    active_tab="tab-equipment",
-                ),
-                html.Div(id="tab-content"),
-            ],
-            fluid=True,
+        html.Main(
+            dbc.Container(
+                [
+                    dbc.Tabs(
+                        [
+                            dbc.Tab(label="Instructions", tab_id="tab-instructions"),
+                            dbc.Tab(label="Equipment Transfers", tab_id="tab-equipment"),
+                            dbc.Tab(label="Installations Map", tab_id="tab-bases"),
+                            dbc.Tab(label="ECG Analysis", tab_id="tab-ecg"),
+                            dbc.Tab(label="Medical Records", tab_id="tab-healthcare"),
+                            dbc.Tab(label="Combined Intel", tab_id="tab-combined"),
+                            dbc.Tab(label="Admin", tab_id="tab-admin"),
+                        ],
+                        id="main-tabs",
+                        active_tab="tab-equipment",
+                    ),
+                    html.Div(id="tab-content", role="tabpanel", **{"aria-live": "polite"}),
+                ],
+                fluid=True,
+            ),
+            role="main",
         ),
     ]
 )
+
+
+VALID_TABS = {
+    "tab-instructions",
+    "tab-equipment",
+    "tab-ecg",
+    "tab-bases",
+    "tab-healthcare",
+    "tab-combined",
+    "tab-admin",
+}
+
+
+@app.callback(
+    Output("main-tabs", "active_tab"),
+    Input("url", "search"),
+)
+def set_tab_from_url(search):
+    """Set active tab from URL query parameter on page load."""
+    if search:
+        params = parse_qs(search.lstrip("?"))
+        tab = params.get("tab", [None])[0]
+        if tab and tab in VALID_TABS:
+            return tab
+    return no_update
+
+
+@app.callback(
+    Output("url", "search"),
+    Input("main-tabs", "active_tab"),
+)
+def update_url_from_tab(active_tab):
+    """Write the active tab to the URL query string for shareability."""
+    if active_tab:
+        return "?" + urlencode({"tab": active_tab})
+    return no_update
 
 
 @app.callback(
@@ -98,6 +147,8 @@ def render_tab(active_tab):
         return tab_healthcare.layout()
     elif active_tab == "tab-combined":
         return tab_combined.layout()
+    elif active_tab == "tab-admin":
+        return tab_admin.layout()
     return html.Div("Select a tab to get started.")
 
 

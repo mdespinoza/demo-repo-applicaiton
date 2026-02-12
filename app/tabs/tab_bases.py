@@ -4,7 +4,7 @@ import io
 import json
 
 import dash_bootstrap_components as dbc
-from dash import dcc, html, callback, Input, Output, no_update
+from dash import dcc, html, callback, Input, Output, State, no_update
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -47,8 +47,9 @@ def layout():
 
     return html.Div(
         [
-            # Filtered data store
+            # Filtered data store + CSV download
             dcc.Store(id="bases-filtered-store"),
+            dcc.Download(id="bases-download-csv"),
             # Filters
             dbc.Row(
                 [
@@ -102,6 +103,26 @@ def layout():
                     ),
                 ],
                 className="filter-panel",
+                role="search",
+                **{"aria-label": "Military bases filters"},
+            ),
+            # Export button
+            dbc.Row(
+                dbc.Col(
+                    html.Button(
+                        [
+                            html.I(className="bi bi-download me-2",
+                                   **{"aria-hidden": "true"}),
+                            "Export Filtered Data (CSV)",
+                        ],
+                        id="bases-export-btn",
+                        className="btn btn-outline-info btn-sm",
+                        **{"aria-label": "Download filtered bases data as CSV"},
+                    ),
+                    width="auto",
+                ),
+                className="mb-2",
+                justify="end",
             ),
             # --- Geographic Overview ---
             dbc.Row(
@@ -700,3 +721,23 @@ def update_bases_detail(store_data):
     )
 
     return sunburst_fig, sm_fig, size_box_fig, ap_fig
+
+
+# ---------------------------------------------------------------------------
+# CSV Export callback
+# ---------------------------------------------------------------------------
+@callback(
+    Output("bases-download-csv", "data"),
+    Input("bases-export-btn", "n_clicks"),
+    State("bases-filtered-store", "data"),
+    prevent_initial_call=True,
+)
+def export_bases_csv(n_clicks, store_data):
+    """Export currently filtered bases data as a CSV download."""
+    if not store_data:
+        return no_update
+    data = json.loads(store_data)
+    df = pd.read_json(io.StringIO(data["df"]), orient="split")
+    # Drop hovertext column (computed for display only)
+    export_cols = [c for c in df.columns if c != "hovertext"]
+    return dcc.send_data_frame(df[export_cols].to_csv, "military_bases.csv", index=False)
