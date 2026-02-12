@@ -90,8 +90,7 @@ def layout():
                                     dcc.Dropdown(
                                         id="combined-region-filter",
                                         options=[
-                                            {"label": r, "value": r}
-                                            for r in ["Northeast", "Midwest", "South", "West"]
+                                            {"label": r, "value": r} for r in ["Northeast", "Midwest", "South", "West"]
                                         ],
                                         multi=True,
                                         placeholder="All Regions",
