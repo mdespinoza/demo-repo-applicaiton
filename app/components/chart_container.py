@@ -46,8 +46,13 @@ def chart_container(graph_id, title=None, height=450, info=None):
     children.append(
         dcc.Loading(
             dcc.Graph(id=graph_id, style={"height": f"{height}px"}, config=config),
-            type="circle",
+            type="default",
             color="#38BDF8",
+            overlay_style={
+                "visibility": "visible",
+                "opacity": 1,
+                "backgroundColor": "rgba(11, 15, 25, 0.75)",
+            },
         )
     )
     aria_label = f"{title} chart" if title else "Data visualization"

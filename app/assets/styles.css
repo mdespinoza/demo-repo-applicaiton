@@ -226,6 +226,7 @@ body {
     margin-bottom: 16px;
     box-shadow: var(--shadow-sm);
     transition: border-color 0.25s ease;
+    overflow: hidden;
 }
 
 .chart-card:hover {
@@ -516,6 +517,356 @@ body {
     border-width: 0;
 }
 
+/* ---------- Footer ---------- */
+.app-footer {
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+    padding: 20px 28px;
+    margin-top: 40px;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.app-footer .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 100%;
+}
+
+.app-footer .footer-brand {
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.3px;
+}
+
+.app-footer .footer-links {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.app-footer .footer-links span {
+    color: var(--text-muted);
+}
+
+.footer-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    display: inline-block;
+}
+
+/* ---------- Tab Icons via CSS ---------- */
+.nav-tabs .nav-item .nav-link::before {
+    font-family: 'bootstrap-icons';
+    margin-right: 6px;
+    font-size: 0.82rem;
+    opacity: 0.6;
+    vertical-align: -1px;
+}
+
+.nav-tabs .nav-item .nav-link.active::before {
+    opacity: 1;
+}
+
+/* book-half */
+.nav-tabs .nav-item:nth-child(1) .nav-link::before { content: "\F19B"; }
+/* box-seam */
+.nav-tabs .nav-item:nth-child(2) .nav-link::before { content: "\F1C3"; }
+/* geo-alt */
+.nav-tabs .nav-item:nth-child(3) .nav-link::before { content: "\F3E8"; }
+/* activity / heartbeat */
+.nav-tabs .nav-item:nth-child(4) .nav-link::before { content: "\F66B"; }
+/* clipboard2-pulse */
+.nav-tabs .nav-item:nth-child(5) .nav-link::before { content: "\F730"; }
+/* layers */
+.nav-tabs .nav-item:nth-child(6) .nav-link::before { content: "\F479"; }
+/* gear */
+.nav-tabs .nav-item:nth-child(7) .nav-link::before { content: "\F3E4"; }
+
+/* ---------- KPI Card Accent Border ---------- */
+.kpi-card {
+    border-left: 3px solid transparent;
+}
+
+.kpi-card:hover {
+    border-left-color: var(--accent-blue);
+}
+
+/* ---------- Filter Panel Header ---------- */
+.filter-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.filter-panel-header .bi {
+    color: var(--accent-blue);
+    font-size: 0.9rem;
+}
+
+.filter-panel-header span {
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+}
+
+/* ---------- Export Button Refinement ---------- */
+.export-btn-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+}
+
+/* ---------- Accordion Improvements ---------- */
+.accordion-item {
+    background: var(--bg-card-solid) !important;
+    border-color: var(--border) !important;
+}
+
+.accordion-button {
+    background: var(--bg-elevated) !important;
+    color: var(--text-primary) !important;
+    font-weight: 600;
+    font-size: 0.88rem;
+    padding: 14px 18px;
+    box-shadow: none !important;
+}
+
+.accordion-button:not(.collapsed) {
+    background: rgba(56, 189, 248, 0.06) !important;
+    color: var(--accent-blue) !important;
+    border-bottom: 1px solid var(--border);
+}
+
+.accordion-button::after {
+    filter: invert(0.6);
+}
+
+.accordion-button:not(.collapsed)::after {
+    filter: invert(0.5) sepia(1) saturate(5) hue-rotate(175deg);
+}
+
+.accordion-body {
+    background: var(--bg-card-solid) !important;
+    color: var(--text-secondary);
+    padding: 16px 18px;
+}
+
+/* ---------- DataTable Pagination ---------- */
+.previous-next-container {
+    padding: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.previous-next-container button {
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 6px 10px !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.previous-next-container button:hover:not([disabled]) {
+    background: rgba(56, 189, 248, 0.08) !important;
+    border-color: var(--accent-blue) !important;
+}
+
+.previous-next-container button[disabled] {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.previous-next-container .page-number {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
+.previous-next-container input {
+    background: var(--bg-input) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 4px 8px;
+    width: 48px;
+    text-align: center;
+    font-size: 0.82rem;
+}
+
+/* ---------- DataTable Row Hover ---------- */
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner tr:hover td {
+    background-color: rgba(56, 189, 248, 0.04) !important;
+}
+
+/* ---------- DataTable Filter Inputs ---------- */
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner input {
+    background-color: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 4px !important;
+    padding: 4px 8px !important;
+    font-size: 0.8rem;
+}
+
+/* ---------- Admin Section Card ---------- */
+.admin-section {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.admin-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.admin-section-title .bi {
+    color: var(--accent-blue);
+    font-size: 1rem;
+}
+
+/* ---------- Badge Refinement ---------- */
+.status-badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+    letter-spacing: 0.3px;
+}
+
+/* ---------- Disk Cache File List ---------- */
+.disk-file-row {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    transition: border-color 0.2s ease;
+}
+
+.disk-file-row:hover {
+    border-color: var(--border-hover);
+}
+
+.disk-file-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.disk-file-left {
+    display: flex;
+    align-items: center;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.disk-file-left .bi {
+    color: var(--accent-blue);
+    font-size: 0.9rem;
+}
+
+.disk-file-name {
+    font-weight: 500;
+}
+
+.disk-file-right {
+    display: flex;
+    align-items: center;
+}
+
+.disk-file-size {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.disk-bar {
+    height: 4px;
+    background: var(--bg-base);
+    border-radius: 2px;
+    margin-bottom: 6px;
+    overflow: hidden;
+}
+
+.disk-bar-fill {
+    height: 100%;
+    background: var(--gradient-primary);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+
+.disk-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border);
+}
+
+.disk-total-value {
+    color: var(--accent-blue);
+    font-weight: 700;
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Tab Loading Overlay ---------- */
+.tab-loading-wrapper {
+    min-height: 400px;
+}
+
+/* The overlay div Dash injects when loading */
+.tab-loading-wrapper .dash-loading-callback {
+    border-radius: var(--radius);
+}
+
+/* "Loading..." label below the spinner */
+.tab-loading-wrapper .dash-default-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.tab-loading-wrapper .dash-default-spinner::after {
+    content: "Loading...";
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* ---------- Chart Card Title Refinement ---------- */
+.chart-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 768px) {
     .app-header h1 {
@@ -534,5 +885,15 @@ body {
     .container-fluid {
         padding-left: 16px;
         padding-right: 16px;
+    }
+
+    .app-footer .footer-inner {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+
+    .filter-panel-header {
+        display: none;
     }
 }

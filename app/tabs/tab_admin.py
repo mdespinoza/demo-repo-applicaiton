@@ -31,32 +31,59 @@ def layout():
             # Auto-refresh interval (every 10s)
             dcc.Interval(id="admin-refresh-interval", interval=10_000, n_intervals=0),
             # --- System Info ---
-            html.H4("System Information", className="chart-title mt-3"),
-            dbc.Row(id="admin-system-metrics", className="mb-3"),
-            # --- Cache Management ---
-            html.H4("Cache Management", className="chart-title"),
-            dbc.Row(
+            html.Div(
                 [
-                    dbc.Col(
-                        html.Button(
-                            [
-                                html.I(className="bi bi-arrow-clockwise me-2", **{"aria-hidden": "true"}),
-                                "Refresh All Caches",
-                            ],
-                            id="admin-refresh-all-btn",
-                            className="btn btn-outline-warning btn-sm",
-                            **{"aria-label": "Clear all in-memory caches and reload"},
-                        ),
-                        width="auto",
+                    html.Div(
+                        [html.I(className="bi bi-cpu"), html.Span("System Information")],
+                        className="admin-section-title",
                     ),
+                    dbc.Row(id="admin-system-metrics"),
                 ],
-                className="mb-3",
+                className="admin-section",
             ),
-            html.Div(id="admin-refresh-status"),
-            dbc.Row(id="admin-cache-cards"),
+            # --- Cache Management ---
+            html.Div(
+                [
+                    html.Div(
+                        [html.I(className="bi bi-database-gear"), html.Span("Cache Management")],
+                        className="admin-section-title",
+                    ),
+                    dbc.Row(
+                        [
+                            dbc.Col(
+                                html.Button(
+                                    [
+                                        html.I(
+                                            className="bi bi-arrow-clockwise me-2",
+                                            **{"aria-hidden": "true"},
+                                        ),
+                                        "Refresh All Caches",
+                                    ],
+                                    id="admin-refresh-all-btn",
+                                    className="btn btn-outline-warning btn-sm",
+                                    **{"aria-label": "Clear all in-memory caches and reload"},
+                                ),
+                                width="auto",
+                            ),
+                        ],
+                        className="mb-3",
+                    ),
+                    html.Div(id="admin-refresh-status"),
+                    dbc.Row(id="admin-cache-cards"),
+                ],
+                className="admin-section",
+            ),
             # --- Disk Cache ---
-            html.H4("Disk Cache Files", className="chart-title mt-3"),
-            html.Div(id="admin-disk-info"),
+            html.Div(
+                [
+                    html.Div(
+                        [html.I(className="bi bi-hdd"), html.Span("Disk Cache Files")],
+                        className="admin-section-title",
+                    ),
+                    html.Div(id="admin-disk-info"),
+                ],
+                className="admin-section",
+            ),
         ],
         className="tab-content-wrapper",
     )
@@ -190,58 +217,75 @@ def update_cache_status(_, n_clicks):
         )
         cards.append(card)
 
-    # Disk cache info
-    disk_rows = []
+    # Disk cache info — only show actual cache files (skip dotfiles)
+    disk_items = []
     if os.path.exists(CACHE_DIR):
-        total_size = 0
         for f in sorted(os.listdir(CACHE_DIR)):
+            if f.startswith("."):
+                continue
             fpath = os.path.join(CACHE_DIR, f)
             if os.path.isfile(fpath):
                 sz = os.path.getsize(fpath)
-                total_size += sz
-                mtime = datetime.fromtimestamp(os.path.getmtime(fpath)).strftime("%Y-%m-%d %H:%M:%S")
-                disk_rows.append(
-                    html.Tr(
-                        [
-                            html.Td(f, style={"color": "#E2E8F0"}),
-                            html.Td(_format_bytes(sz), style={"color": "#94A3B8"}),
-                            html.Td(mtime, style={"color": "#94A3B8"}),
-                        ]
-                    )
-                )
-        disk_rows.append(
-            html.Tr(
-                [
-                    html.Td("Total", style={"color": "#38BDF8", "fontWeight": "700"}),
-                    html.Td(_format_bytes(total_size), style={"color": "#38BDF8", "fontWeight": "700"}),
-                    html.Td("", style={"color": "#94A3B8"}),
-                ]
-            )
-        )
+                mtime = datetime.fromtimestamp(os.path.getmtime(fpath)).strftime("%Y-%m-%d %H:%M")
+                ext = os.path.splitext(f)[1].lstrip(".")
+                disk_items.append({"name": f, "size": sz, "modified": mtime, "ext": ext})
 
-    disk_table = (
-        dbc.Table(
+    if disk_items:
+        total_size = sum(item["size"] for item in disk_items)
+        file_cards = []
+        for item in disk_items:
+            pct = (item["size"] / total_size * 100) if total_size > 0 else 0
+            file_cards.append(
+                html.Div(
+                    [
+                        html.Div(
+                            [
+                                html.Div(
+                                    [
+                                        html.I(className="bi bi-file-earmark-binary me-2"),
+                                        html.Span(item["name"], className="disk-file-name"),
+                                    ],
+                                    className="disk-file-left",
+                                ),
+                                html.Div(
+                                    [
+                                        dbc.Badge(item["ext"].upper(), color="info", className="me-2"),
+                                        html.Span(_format_bytes(item["size"]), className="disk-file-size"),
+                                    ],
+                                    className="disk-file-right",
+                                ),
+                            ],
+                            className="disk-file-header",
+                        ),
+                        html.Div(
+                            html.Div(
+                                style={"width": f"{pct:.1f}%"},
+                                className="disk-bar-fill",
+                            ),
+                            className="disk-bar",
+                        ),
+                        html.Small(item["modified"], className="text-muted"),
+                    ],
+                    className="disk-file-row",
+                )
+            )
+        disk_table = html.Div(
             [
-                html.Thead(
-                    html.Tr(
-                        [
-                            html.Th("File", style={"color": "#38BDF8"}),
-                            html.Th("Size", style={"color": "#38BDF8"}),
-                            html.Th("Last Modified", style={"color": "#38BDF8"}),
-                        ]
-                    )
+                html.Div(file_cards),
+                html.Div(
+                    [
+                        html.Span("Total cache size", className="text-muted"),
+                        html.Span(
+                            _format_bytes(total_size),
+                            className="disk-total-value",
+                        ),
+                    ],
+                    className="disk-total-row",
                 ),
-                html.Tbody(disk_rows),
-            ],
-            bordered=True,
-            dark=True,
-            hover=True,
-            size="sm",
-            style={"maxWidth": "600px"},
+            ]
         )
-        if disk_rows
-        else html.P("No cache files found.", className="text-muted")
-    )
+    else:
+        disk_table = html.P("No cache files found.", className="text-muted")
 
     return cards, disk_table
 
