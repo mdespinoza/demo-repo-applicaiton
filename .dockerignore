@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Testing & development
+tests/
+htmlcov/
+.coverage
+.pytest_cache/
+pytest.ini
+requirements-dev.txt
+.pre-commit-config.yaml
+
+# Claude Code
+.claude/
+
+# macOS
+.DS_Store
+
+# Docs
+*.md
+!README.md
+
+# Large ECG files (use sample files instead)
+datasets/ecg_data/mitbih_train.csv
+datasets/ecg_data/mitbih_test.csv
+datasets/ecg_data/ptbdb_normal.csv
+datasets/ecg_data/ptbdb_abnormal.csv
+
+# Runtime cache (will be generated)
+data_cache/
+app.log
+
+# Environment files
+.env
+.env.local
