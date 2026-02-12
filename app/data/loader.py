@@ -136,7 +136,7 @@ def load_bases():
         coords = df["Geo Point"].apply(parse_geo_point)
         df["lat"] = coords["lat"]
         df["lon"] = coords["lon"]
-        df = df.dropna(subset=["lat", "lon"])
+        df = df.dropna(subset=["lat", "lon"]).copy()
 
         # Normalize component names
         df["COMPONENT"] = df["COMPONENT"].str.strip()
