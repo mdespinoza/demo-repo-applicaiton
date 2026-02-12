@@ -96,8 +96,9 @@ def render_tab(active_tab):
 
 if __name__ == "__main__":
     from app.logging_config import setup_logging
+    from app.settings import DASH_HOST, DASH_PORT, DASH_DEBUG
 
     logger = setup_logging()
     logger.info("Starting Tactical Command Center...")
-    logger.info("Open http://localhost:8050 in your browser")
-    app.run(debug=True, host="0.0.0.0", port=8050)
+    logger.info("Open http://%s:%s in your browser", DASH_HOST, DASH_PORT)
+    app.run(debug=DASH_DEBUG, host=DASH_HOST, port=DASH_PORT)

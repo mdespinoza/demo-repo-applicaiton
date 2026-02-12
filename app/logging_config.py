@@ -23,14 +23,9 @@ def setup_logging(level=None):
         The root application logger ('app').
     """
     if level is None:
-        env = os.environ.get("DASH_ENV", "development")
-        env_level = os.environ.get("DASH_LOG_LEVEL", "")
-        if env_level:
-            level = getattr(logging, env_level.upper(), logging.DEBUG)
-        elif env == "production":
-            level = logging.WARNING
-        else:
-            level = logging.DEBUG
+        from app.settings import DASH_LOG_LEVEL
+
+        level = getattr(logging, DASH_LOG_LEVEL.upper(), logging.DEBUG)
 
     fmt = logging.Formatter(
         "%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d | %(message)s",
