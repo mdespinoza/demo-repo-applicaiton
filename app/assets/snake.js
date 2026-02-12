@@ -20,8 +20,8 @@
   /* ---------- Neon Palette ---------- */
   const PAL = {
     bg: "#0a0a1a",
-    grid: "rgba(0, 255, 170, 0.04)",
-    gridLine: "rgba(0, 255, 170, 0.06)",
+    grid: "rgba(0, 255, 170, 0.08)",
+    gridLine: "rgba(0, 255, 170, 0.18)",
     snakeHead: "#00ffaa",
     snakeBody: "#00cc88",
     snakeGlow: "rgba(0, 255, 170, 0.6)",
@@ -332,7 +332,7 @@
 
     /* Grid */
     ctx.strokeStyle = PAL.gridLine;
-    ctx.lineWidth = 0.5;
+    ctx.lineWidth = 1;
     for (let x = 0; x <= W; x += CELL) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
