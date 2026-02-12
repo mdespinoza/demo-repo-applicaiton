@@ -8,3 +8,4 @@ gunicorn==22.0.0
 statsmodels==0.14.6
 scikit-learn==1.5.2
 psutil==5.9.8
+pyarrow==23.0.0

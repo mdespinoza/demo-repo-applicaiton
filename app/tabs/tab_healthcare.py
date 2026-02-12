@@ -60,35 +60,37 @@ def layout():
             dcc.Store(id="health-filtered-store"),
             dcc.Download(id="health-download-csv"),
             # Filters
-            dbc.Row(
-                [
-                    dbc.Col(
-                        [
-                            html.Label("Medical Specialty", className="filter-label"),
-                            dcc.Dropdown(
-                                id="health-specialty-filter",
-                                options=[{"label": s, "value": s} for s in specialties],
-                                multi=True,
-                                placeholder="All Specialties",
-                            ),
-                        ],
-                        md=6,
-                    ),
-                    dbc.Col(
-                        [
-                            html.Label("Keyword Search", className="filter-label"),
-                            dcc.Input(
-                                id="health-keyword-search",
-                                type="text",
-                                placeholder="Search keywords...",
-                                debounce=True,
-                                className="form-control",
-                            ),
-                        ],
-                        md=6,
-                    ),
-                ],
-                className="filter-panel",
+            html.Div(
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                html.Label("Medical Specialty", className="filter-label"),
+                                dcc.Dropdown(
+                                    id="health-specialty-filter",
+                                    options=[{"label": s, "value": s} for s in specialties],
+                                    multi=True,
+                                    placeholder="All Specialties",
+                                ),
+                            ],
+                            md=6,
+                        ),
+                        dbc.Col(
+                            [
+                                html.Label("Keyword Search", className="filter-label"),
+                                dcc.Input(
+                                    id="health-keyword-search",
+                                    type="text",
+                                    placeholder="Search keywords...",
+                                    debounce=True,
+                                    className="form-control",
+                                ),
+                            ],
+                            md=6,
+                        ),
+                    ],
+                    className="filter-panel",
+                ),
                 role="search",
                 **{"aria-label": "Healthcare data filters"},
             ),

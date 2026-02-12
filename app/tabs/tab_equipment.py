@@ -37,49 +37,51 @@ def layout():
             dcc.Store(id="equip-filtered-store"),
             dcc.Download(id="equip-download-csv"),
             # Filters
-            dbc.Row(
-                [
-                    dbc.Col(
-                        [
-                            html.Label("States", className="filter-label"),
-                            dcc.Dropdown(
-                                id="equip-state-filter",
-                                options=[{"label": s, "value": s} for s in states],
-                                multi=True,
-                                placeholder="All States",
-                            ),
-                        ],
-                        md=4,
-                    ),
-                    dbc.Col(
-                        [
-                            html.Label("Year Range", className="filter-label"),
-                            dcc.RangeSlider(
-                                id="equip-year-slider",
-                                min=min_year,
-                                max=max_year,
-                                value=[min_year, max_year],
-                                marks={y: str(y) for y in range(min_year, max_year + 1, 5)},
-                                step=1,
-                                tooltip={"placement": "bottom"},
-                            ),
-                        ],
-                        md=4,
-                    ),
-                    dbc.Col(
-                        [
-                            html.Label("Category", className="filter-label"),
-                            dcc.Dropdown(
-                                id="equip-category-filter",
-                                options=[{"label": c, "value": c} for c in categories],
-                                multi=True,
-                                placeholder="All Categories",
-                            ),
-                        ],
-                        md=4,
-                    ),
-                ],
-                className="filter-panel",
+            html.Div(
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                html.Label("States", className="filter-label"),
+                                dcc.Dropdown(
+                                    id="equip-state-filter",
+                                    options=[{"label": s, "value": s} for s in states],
+                                    multi=True,
+                                    placeholder="All States",
+                                ),
+                            ],
+                            md=4,
+                        ),
+                        dbc.Col(
+                            [
+                                html.Label("Year Range", className="filter-label"),
+                                dcc.RangeSlider(
+                                    id="equip-year-slider",
+                                    min=min_year,
+                                    max=max_year,
+                                    value=[min_year, max_year],
+                                    marks={y: str(y) for y in range(min_year, max_year + 1, 5)},
+                                    step=1,
+                                    tooltip={"placement": "bottom"},
+                                ),
+                            ],
+                            md=4,
+                        ),
+                        dbc.Col(
+                            [
+                                html.Label("Category", className="filter-label"),
+                                dcc.Dropdown(
+                                    id="equip-category-filter",
+                                    options=[{"label": c, "value": c} for c in categories],
+                                    multi=True,
+                                    placeholder="All Categories",
+                                ),
+                            ],
+                            md=4,
+                        ),
+                    ],
+                    className="filter-panel",
+                ),
                 role="search",
                 **{"aria-label": "Equipment data filters"},
             ),

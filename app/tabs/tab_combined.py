@@ -76,37 +76,39 @@ def layout():
             dcc.Store(id="combined-filtered-store"),
             dcc.Download(id="combined-download-csv"),
             # --- NEW FILTER PANEL ---
-            dbc.Row(
-                [
-                    dbc.Col(
-                        [
-                            html.Label("Region", className="filter-label"),
-                            dcc.Dropdown(
-                                id="combined-region-filter",
-                                options=[{"label": r, "value": r} for r in ["Northeast", "Midwest", "South", "West"]],
-                                multi=True,
-                                placeholder="All Regions",
-                            ),
-                        ],
-                        md=6,
-                    ),
-                    dbc.Col(
-                        [
-                            html.Label("Minimum Bases", className="filter-label"),
-                            dcc.Slider(
-                                id="combined-min-bases",
-                                min=0,
-                                max=50,
-                                value=0,
-                                step=1,
-                                marks={0: "0", 10: "10", 20: "20", 30: "30", 40: "40", 50: "50"},
-                                tooltip={"placement": "bottom"},
-                            ),
-                        ],
-                        md=6,
-                    ),
-                ],
-                className="filter-panel",
+            html.Div(
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                html.Label("Region", className="filter-label"),
+                                dcc.Dropdown(
+                                    id="combined-region-filter",
+                                    options=[{"label": r, "value": r} for r in ["Northeast", "Midwest", "South", "West"]],
+                                    multi=True,
+                                    placeholder="All Regions",
+                                ),
+                            ],
+                            md=6,
+                        ),
+                        dbc.Col(
+                            [
+                                html.Label("Minimum Bases", className="filter-label"),
+                                dcc.Slider(
+                                    id="combined-min-bases",
+                                    min=0,
+                                    max=50,
+                                    value=0,
+                                    step=1,
+                                    marks={0: "0", 10: "10", 20: "20", 30: "30", 40: "40", 50: "50"},
+                                    tooltip={"placement": "bottom"},
+                                ),
+                            ],
+                            md=6,
+                        ),
+                    ],
+                    className="filter-panel",
+                ),
                 role="search",
                 **{"aria-label": "Combined data filters"},
             ),

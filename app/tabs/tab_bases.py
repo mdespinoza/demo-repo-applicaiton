@@ -51,58 +51,60 @@ def layout():
             dcc.Store(id="bases-filtered-store"),
             dcc.Download(id="bases-download-csv"),
             # Filters
-            dbc.Row(
-                [
-                    dbc.Col(
-                        [
-                            html.Label("Component / Branch", className="filter-label"),
-                            dcc.Dropdown(
-                                id="bases-component-filter",
-                                options=[{"label": c, "value": c} for c in components],
-                                multi=True,
-                                placeholder="All Components",
-                            ),
-                        ],
-                        md=3,
-                    ),
-                    dbc.Col(
-                        [
-                            html.Label("Operational Status", className="filter-label"),
-                            dcc.Dropdown(
-                                id="bases-status-filter",
-                                options=[{"label": s, "value": s} for s in statuses],
-                                multi=True,
-                                placeholder="All Statuses",
-                            ),
-                        ],
-                        md=3,
-                    ),
-                    dbc.Col(
-                        [
-                            html.Label("State / Territory", className="filter-label"),
-                            dcc.Dropdown(
-                                id="bases-state-filter",
-                                options=[{"label": s, "value": s} for s in states],
-                                multi=True,
-                                placeholder="All States",
-                            ),
-                        ],
-                        md=3,
-                    ),
-                    dbc.Col(
-                        [
-                            html.Label("Joint Base", className="filter-label"),
-                            dcc.Dropdown(
-                                id="bases-joint-filter",
-                                options=[{"label": j, "value": j} for j in joint_vals],
-                                multi=True,
-                                placeholder="All",
-                            ),
-                        ],
-                        md=3,
-                    ),
-                ],
-                className="filter-panel",
+            html.Div(
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                html.Label("Component / Branch", className="filter-label"),
+                                dcc.Dropdown(
+                                    id="bases-component-filter",
+                                    options=[{"label": c, "value": c} for c in components],
+                                    multi=True,
+                                    placeholder="All Components",
+                                ),
+                            ],
+                            md=3,
+                        ),
+                        dbc.Col(
+                            [
+                                html.Label("Operational Status", className="filter-label"),
+                                dcc.Dropdown(
+                                    id="bases-status-filter",
+                                    options=[{"label": s, "value": s} for s in statuses],
+                                    multi=True,
+                                    placeholder="All Statuses",
+                                ),
+                            ],
+                            md=3,
+                        ),
+                        dbc.Col(
+                            [
+                                html.Label("State / Territory", className="filter-label"),
+                                dcc.Dropdown(
+                                    id="bases-state-filter",
+                                    options=[{"label": s, "value": s} for s in states],
+                                    multi=True,
+                                    placeholder="All States",
+                                ),
+                            ],
+                            md=3,
+                        ),
+                        dbc.Col(
+                            [
+                                html.Label("Joint Base", className="filter-label"),
+                                dcc.Dropdown(
+                                    id="bases-joint-filter",
+                                    options=[{"label": j, "value": j} for j in joint_vals],
+                                    multi=True,
+                                    placeholder="All",
+                                ),
+                            ],
+                            md=3,
+                        ),
+                    ],
+                    className="filter-panel",
+                ),
                 role="search",
                 **{"aria-label": "Military bases filters"},
             ),
