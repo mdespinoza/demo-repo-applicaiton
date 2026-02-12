@@ -16,7 +16,6 @@ from app.config import (
     EQUIPMENT_CACHE,
     BASES_CACHE,
     HEALTHCARE_CACHE,
-    get_equipment_category,
 )
 from app.logging_config import get_logger
 

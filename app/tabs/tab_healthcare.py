@@ -378,7 +378,6 @@ def update_health_analysis(store_data):
         return no_update, no_update, no_update
 
     data = json.loads(store_data)
-    df = pd.read_json(io.StringIO(data["df"]), orient="split")
     spec_stats = pd.read_json(io.StringIO(data["spec_stats"]), orient="split")
     spec_counts = pd.read_json(io.StringIO(data["spec_counts"]), orient="split")
 
