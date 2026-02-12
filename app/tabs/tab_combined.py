@@ -84,7 +84,9 @@ def layout():
                                 html.Label("Region", className="filter-label"),
                                 dcc.Dropdown(
                                     id="combined-region-filter",
-                                    options=[{"label": r, "value": r} for r in ["Northeast", "Midwest", "South", "West"]],
+                                    options=[
+                                        {"label": r, "value": r} for r in ["Northeast", "Midwest", "South", "West"]
+                                    ],
                                     multi=True,
                                     placeholder="All Regions",
                                 ),

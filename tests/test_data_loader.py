@@ -81,8 +81,9 @@ class TestValidateDataframe:
 class TestLoadEquipment:
     """Test equipment data loading, caching, and error handling."""
 
+    @patch("app.data.loader._cache_is_fresh", return_value=False)
     @patch("app.data.loader.pd.read_csv")
-    def test_returns_dataframe_with_transformations(self, mock_csv):
+    def test_returns_dataframe_with_transformations(self, mock_csv, _mock_fresh):
         """Verify successful loading processes all transformations."""
         mock_csv.return_value = pd.DataFrame(
             {
@@ -110,8 +111,9 @@ class TestLoadEquipment:
         assert "Category" in df.columns
         assert df["Category"].iloc[0] == "Weapons & Firearms"
 
+    @patch("app.data.loader._cache_is_fresh", return_value=False)
     @patch("app.data.loader.pd.read_csv")
-    def test_caching_returns_same_object(self, mock_csv):
+    def test_caching_returns_same_object(self, mock_csv, _mock_fresh):
         """Second call should return cached result without re-reading CSV."""
         mock_csv.return_value = pd.DataFrame(
             {
@@ -134,22 +136,25 @@ class TestLoadEquipment:
         assert mock_csv.call_count == 1
         assert df1 is df2
 
+    @patch("app.data.loader._cache_is_fresh", return_value=False)
     @patch("app.data.loader.pd.read_csv", side_effect=FileNotFoundError("not found"))
-    def test_file_not_found_returns_empty(self, mock_csv):
+    def test_file_not_found_returns_empty(self, mock_csv, _mock_fresh):
         """Missing file should return empty DataFrame, not crash."""
         df = loader.load_equipment()
         assert isinstance(df, pd.DataFrame)
         assert df.empty
 
+    @patch("app.data.loader._cache_is_fresh", return_value=False)
     @patch("app.data.loader.pd.read_csv", side_effect=pd.errors.ParserError("corrupt"))
-    def test_parser_error_returns_empty(self, mock_csv):
+    def test_parser_error_returns_empty(self, mock_csv, _mock_fresh):
         """Corrupted CSV should return empty DataFrame."""
         df = loader.load_equipment()
         assert isinstance(df, pd.DataFrame)
         assert df.empty
 
+    @patch("app.data.loader._cache_is_fresh", return_value=False)
     @patch("app.data.loader.pd.read_csv")
-    def test_coercion_of_bad_values(self, mock_csv):
+    def test_coercion_of_bad_values(self, mock_csv, _mock_fresh):
         """Non-numeric values should be coerced, not crash."""
         mock_csv.return_value = pd.DataFrame(
             {
@@ -173,8 +178,9 @@ class TestLoadEquipment:
         assert df["DEMIL Code"].iloc[0] == "Unknown"
         assert df["Station Type"].iloc[0] == "Unknown"
 
+    @patch("app.data.loader._cache_is_fresh", return_value=False)
     @patch("app.data.loader.pd.read_csv")
-    def test_empty_dataframe_cached(self, mock_csv):
+    def test_empty_dataframe_cached(self, mock_csv, _mock_fresh):
         """Error path caches empty DataFrame to avoid repeated failures."""
         mock_csv.side_effect = FileNotFoundError("missing")
         loader.load_equipment()
@@ -190,8 +196,9 @@ class TestLoadEquipment:
 class TestLoadBases:
     """Test bases data loading, geo parsing, and error handling."""
 
+    @patch("app.data.loader._cache_is_fresh", return_value=False)
     @patch("app.data.loader.pd.read_csv")
-    def test_success_with_geo_parsing(self, mock_csv):
+    def test_success_with_geo_parsing(self, mock_csv, _mock_fresh):
         mock_csv.return_value = pd.DataFrame(
             {
                 "Geo Point": ["31.23, -85.65", "34.91, -117.88"],
@@ -212,8 +219,9 @@ class TestLoadBases:
         assert df["COMPONENT"].iloc[0] == "Army Active"  # stripped
         assert df["Oper Stat"].iloc[1] == "Unknown"  # fillna
 
+    @patch("app.data.loader._cache_is_fresh", return_value=False)
     @patch("app.data.loader.pd.read_csv")
-    def test_invalid_geo_point_dropped(self, mock_csv):
+    def test_invalid_geo_point_dropped(self, mock_csv, _mock_fresh):
         """Rows with unparseable Geo Point should be dropped."""
         mock_csv.return_value = pd.DataFrame(
             {
@@ -231,14 +239,16 @@ class TestLoadBases:
         df = loader.load_bases()
         assert len(df) == 1  # Only valid row kept
 
+    @patch("app.data.loader._cache_is_fresh", return_value=False)
     @patch("app.data.loader.pd.read_csv", side_effect=FileNotFoundError)
-    def test_file_not_found_returns_empty(self, mock_csv):
+    def test_file_not_found_returns_empty(self, mock_csv, _mock_fresh):
         df = loader.load_bases()
         assert isinstance(df, pd.DataFrame)
         assert df.empty
 
+    @patch("app.data.loader._cache_is_fresh", return_value=False)
     @patch("app.data.loader.pd.read_csv")
-    def test_caching(self, mock_csv):
+    def test_caching(self, mock_csv, _mock_fresh):
         mock_csv.return_value = pd.DataFrame(
             {
                 "Geo Point": ["31.23, -85.65"],
@@ -265,8 +275,9 @@ class TestLoadBases:
 class TestLoadHealthcare:
     """Test healthcare data loading and error handling."""
 
+    @patch("app.data.loader._cache_is_fresh", return_value=False)
     @patch("app.data.loader.pd.read_csv")
-    def test_success_with_transformations(self, mock_csv):
+    def test_success_with_transformations(self, mock_csv, _mock_fresh):
         mock_csv.return_value = pd.DataFrame(
             {
                 "Serial No": [0],
@@ -286,14 +297,16 @@ class TestLoadHealthcare:
         assert df["transcription_length"].iloc[0] == len("cleaned text here")
         assert df["keywords"].iloc[0] == "allergy, rhinitis"  # rstripped comma
 
+    @patch("app.data.loader._cache_is_fresh", return_value=False)
     @patch("app.data.loader.pd.read_csv", side_effect=FileNotFoundError)
-    def test_file_not_found_returns_empty(self, mock_csv):
+    def test_file_not_found_returns_empty(self, mock_csv, _mock_fresh):
         df = loader.load_healthcare()
         assert isinstance(df, pd.DataFrame)
         assert df.empty
 
+    @patch("app.data.loader._cache_is_fresh", return_value=False)
     @patch("app.data.loader.pd.read_csv")
-    def test_caching(self, mock_csv):
+    def test_caching(self, mock_csv, _mock_fresh):
         mock_csv.return_value = pd.DataFrame(
             {
                 "Serial No": [0],
@@ -309,8 +322,9 @@ class TestLoadHealthcare:
         loader.load_healthcare()
         assert mock_csv.call_count == 1
 
+    @patch("app.data.loader._cache_is_fresh", return_value=False)
     @patch("app.data.loader.pd.read_csv", side_effect=pd.errors.ParserError("bad"))
-    def test_parser_error_returns_empty(self, mock_csv):
+    def test_parser_error_returns_empty(self, mock_csv, _mock_fresh):
         df = loader.load_healthcare()
         assert isinstance(df, pd.DataFrame)
         assert df.empty
