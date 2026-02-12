@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${DASH_PORT:-8050}:8050"
+    environment:
+      - DASH_ENV=development
+      - DASH_HOST=0.0.0.0
+      - DASH_PORT=8050
+      - DASH_DEBUG=true
+      - DASH_LOG_LEVEL=DEBUG
+    volumes:
+      # Mount source code for live reloading in development
+      - ./app:/app/app
+      - ./datasets:/app/datasets
+      - ./data_cache:/app/data_cache
+    # Override production CMD with dev server for hot reload
+    command: ["python", "app/main.py"]
+    restart: unless-stopped

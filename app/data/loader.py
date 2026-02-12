@@ -1,4 +1,5 @@
 """Centralized data loading with caching."""
+
 import json
 import os
 import sys
@@ -6,8 +7,13 @@ import csv
 import pandas as pd
 import numpy as np
 from app.config import (
-    EQUIPMENT_CSV, ECG_DIR, BASES_CSV, HEALTHCARE_CSV,
-    CACHE_DIR, ECG_CACHE, get_equipment_category,
+    EQUIPMENT_CSV,
+    ECG_DIR,
+    BASES_CSV,
+    HEALTHCARE_CSV,
+    CACHE_DIR,
+    ECG_CACHE,
+    get_equipment_category,
 )
 from app.logging_config import get_logger
 
@@ -65,8 +71,17 @@ def load_equipment():
 
         validate_dataframe(
             df,
-            ["State", "Agency Name", "NSN", "Item Name", "Quantity",
-             "Acquisition Value", "Ship Date", "DEMIL Code", "Station Type"],
+            [
+                "State",
+                "Agency Name",
+                "NSN",
+                "Item Name",
+                "Quantity",
+                "Acquisition Value",
+                "Ship Date",
+                "DEMIL Code",
+                "Station Type",
+            ],
             name="Equipment",
         )
 
@@ -92,11 +107,22 @@ def load_equipment():
     except Exception:
         logger.exception("Unexpected error loading equipment data")
 
-    empty = pd.DataFrame(columns=[
-        "State", "Agency Name", "NSN", "Item Name", "Quantity",
-        "Acquisition Value", "DEMIL Code", "Ship Date", "Year",
-        "Category", "Station Type", "UI",
-    ])
+    empty = pd.DataFrame(
+        columns=[
+            "State",
+            "Agency Name",
+            "NSN",
+            "Item Name",
+            "Quantity",
+            "Acquisition Value",
+            "DEMIL Code",
+            "Ship Date",
+            "Year",
+            "Category",
+            "Station Type",
+            "UI",
+        ]
+    )
     _cache["equipment"] = empty
     return empty
 
@@ -116,8 +142,7 @@ def load_bases():
 
         validate_dataframe(
             df,
-            ["Geo Point", "COMPONENT", "Site Name", "State Terr",
-             "Oper Stat", "Joint Base", "AREA", "PERIMETER"],
+            ["Geo Point", "COMPONENT", "Site Name", "State Terr", "Oper Stat", "Joint Base", "AREA", "PERIMETER"],
             name="Bases",
         )
 
@@ -161,10 +186,19 @@ def load_bases():
     except Exception:
         logger.exception("Unexpected error loading bases data")
 
-    empty = pd.DataFrame(columns=[
-        "COMPONENT", "Site Name", "State Terr", "Oper Stat",
-        "Joint Base", "lat", "lon", "AREA", "PERIMETER",
-    ])
+    empty = pd.DataFrame(
+        columns=[
+            "COMPONENT",
+            "Site Name",
+            "State Terr",
+            "Oper Stat",
+            "Joint Base",
+            "lat",
+            "lon",
+            "AREA",
+            "PERIMETER",
+        ]
+    )
     _cache["bases"] = empty
     return empty
 
@@ -206,10 +240,17 @@ def load_healthcare():
     except Exception:
         logger.exception("Unexpected error loading healthcare data")
 
-    empty = pd.DataFrame(columns=[
-        "Serial No", "description", "medical_specialty", "sample_name",
-        "keywords", "cleaned_transcription", "transcription_length",
-    ])
+    empty = pd.DataFrame(
+        columns=[
+            "Serial No",
+            "description",
+            "medical_specialty",
+            "sample_name",
+            "keywords",
+            "cleaned_transcription",
+            "transcription_length",
+        ]
+    )
     _cache["healthcare"] = empty
     return empty
 
@@ -261,7 +302,11 @@ def _precompute_ecg():
         result = {}
 
         for dataset_name, files, class_map in [
-            ("mitbih", ["mitbih_train.csv", "mitbih_test.csv"], {0: "Normal (N)", 1: "Supraventricular (S)", 2: "Ventricular (V)", 3: "Fusion (F)", 4: "Unknown (Q)"}),
+            (
+                "mitbih",
+                ["mitbih_train.csv", "mitbih_test.csv"],
+                {0: "Normal (N)", 1: "Supraventricular (S)", 2: "Ventricular (V)", 3: "Fusion (F)", 4: "Unknown (Q)"},
+            ),
             ("ptbdb", ["ptbdb_normal.csv", "ptbdb_abnormal.csv"], {0: "Normal", 1: "Abnormal"}),
         ]:
             dfs = {}
@@ -324,8 +369,10 @@ def _precompute_ecg():
                     # Signal features
                     split_data["features"][class_name] = {
                         "peak_amplitude": float(np.mean(np.max(class_signals, axis=1))),
-                        "energy": float(np.mean(np.sum(class_signals ** 2, axis=1))),
-                        "zero_crossings": float(np.mean(np.sum(np.diff(np.sign(class_signals - 0.5), axis=1) != 0, axis=1))),
+                        "energy": float(np.mean(np.sum(class_signals**2, axis=1))),
+                        "zero_crossings": float(
+                            np.mean(np.sum(np.diff(np.sign(class_signals - 0.5), axis=1) != 0, axis=1))
+                        ),
                     }
 
                 ds_result["splits"][split_name] = split_data
@@ -381,8 +428,10 @@ def _precompute_ecg():
                             split_data["samples"][class_name] = class_signals[sample_idx].tolist()
                             split_data["features"][class_name] = {
                                 "peak_amplitude": float(np.mean(np.max(class_signals, axis=1))),
-                                "energy": float(np.mean(np.sum(class_signals ** 2, axis=1))),
-                                "zero_crossings": float(np.mean(np.sum(np.diff(np.sign(class_signals - 0.5), axis=1) != 0, axis=1))),
+                                "energy": float(np.mean(np.sum(class_signals**2, axis=1))),
+                                "zero_crossings": float(
+                                    np.mean(np.sum(np.diff(np.sign(class_signals - 0.5), axis=1) != 0, axis=1))
+                                ),
                             }
                         ds_result["splits"][split_name] = split_data
 
@@ -405,6 +454,7 @@ def _precompute_ecg():
                         pca_labels.append(class_name)
                 if len(pca_signals) > 2:
                     from sklearn.decomposition import PCA
+
                     pca_arr = np.array(pca_signals)
                     pca = PCA(n_components=2, random_state=42)
                     embedding = pca.fit_transform(pca_arr)

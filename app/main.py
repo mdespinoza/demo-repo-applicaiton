@@ -1,15 +1,16 @@
 """Data Visualization App - Main entry point."""
+
 import sys
 import os
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import dash
-from dash import dcc, html, Input, Output
-import dash_bootstrap_components as dbc
+import dash  # noqa: E402
+from dash import html, Input, Output  # noqa: E402
+import dash_bootstrap_components as dbc  # noqa: E402
 
-from app.tabs import tab_instructions, tab_equipment, tab_ecg, tab_bases, tab_healthcare, tab_combined
+from app.tabs import tab_instructions, tab_equipment, tab_ecg, tab_bases, tab_healthcare, tab_combined  # noqa: E402
 
 # Initialize Dash app
 app = dash.Dash(
@@ -23,34 +24,53 @@ app = dash.Dash(
 server = app.server
 
 # App layout
-app.layout = html.Div([
-    # Header
-    html.Div([
-        dbc.Container([
-            html.Div([
-                html.Div("LIVE ANALYTICS PLATFORM", className="header-badge"),
-                html.H1([
-                    "Command ",
-                    html.Span("Center", className="highlight"),
-                ]),
-                html.P("Military, biomedical & healthcare intelligence \u2014 unified in one view"),
-            ], className="header-inner"),
-        ], fluid=True),
-    ], className="app-header"),
-
-    # Tabs — grouped: Military > Medical > Combined
-    dbc.Container([
-        dbc.Tabs([
-            dbc.Tab(label="Instructions", tab_id="tab-instructions"),
-            dbc.Tab(label="Equipment Transfers", tab_id="tab-equipment"),
-            dbc.Tab(label="Installations Map", tab_id="tab-bases"),
-            dbc.Tab(label="ECG Analysis", tab_id="tab-ecg"),
-            dbc.Tab(label="Medical Records", tab_id="tab-healthcare"),
-            dbc.Tab(label="Combined Intel", tab_id="tab-combined"),
-        ], id="main-tabs", active_tab="tab-equipment"),
-        html.Div(id="tab-content"),
-    ], fluid=True),
-])
+app.layout = html.Div(
+    [
+        # Header
+        html.Div(
+            [
+                dbc.Container(
+                    [
+                        html.Div(
+                            [
+                                html.Div("LIVE ANALYTICS PLATFORM", className="header-badge"),
+                                html.H1(
+                                    [
+                                        "Command ",
+                                        html.Span("Center", className="highlight"),
+                                    ]
+                                ),
+                                html.P("Military, biomedical & healthcare intelligence \u2014 unified in one view"),
+                            ],
+                            className="header-inner",
+                        ),
+                    ],
+                    fluid=True,
+                ),
+            ],
+            className="app-header",
+        ),
+        # Tabs — grouped: Military > Medical > Combined
+        dbc.Container(
+            [
+                dbc.Tabs(
+                    [
+                        dbc.Tab(label="Instructions", tab_id="tab-instructions"),
+                        dbc.Tab(label="Equipment Transfers", tab_id="tab-equipment"),
+                        dbc.Tab(label="Installations Map", tab_id="tab-bases"),
+                        dbc.Tab(label="ECG Analysis", tab_id="tab-ecg"),
+                        dbc.Tab(label="Medical Records", tab_id="tab-healthcare"),
+                        dbc.Tab(label="Combined Intel", tab_id="tab-combined"),
+                    ],
+                    id="main-tabs",
+                    active_tab="tab-equipment",
+                ),
+                html.Div(id="tab-content"),
+            ],
+            fluid=True,
+        ),
+    ]
+)
 
 
 @app.callback(
@@ -76,8 +96,9 @@ def render_tab(active_tab):
 
 if __name__ == "__main__":
     from app.logging_config import setup_logging
+    from app.settings import DASH_HOST, DASH_PORT, DASH_DEBUG
 
     logger = setup_logging()
     logger.info("Starting Tactical Command Center...")
-    logger.info("Open http://localhost:8050 in your browser")
-    app.run(debug=True, host="0.0.0.0", port=8050)
+    logger.info("Open http://%s:%s in your browser", DASH_HOST, DASH_PORT)
+    app.run(debug=DASH_DEBUG, host=DASH_HOST, port=DASH_PORT)

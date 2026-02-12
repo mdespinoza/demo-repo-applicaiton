@@ -1,13 +1,12 @@
 """Comprehensive unit tests for app.data.loader module."""
+
 import json
 import pytest
 import pandas as pd
-import numpy as np
 from unittest.mock import patch, mock_open
 
 from app.data import loader
 from app.config import get_equipment_category
-
 
 # ═══════════════════════════════════════════════════════════════════
 # Helper function tests
@@ -85,18 +84,20 @@ class TestLoadEquipment:
     @patch("app.data.loader.pd.read_csv")
     def test_returns_dataframe_with_transformations(self, mock_csv):
         """Verify successful loading processes all transformations."""
-        mock_csv.return_value = pd.DataFrame({
-            "State": ["CA"],
-            "Agency Name": [" LAPD "],
-            "NSN": ["1005-01-001-0001"],
-            "Item Name": ["RIFLE"],
-            "Quantity": ["10"],
-            "Acquisition Value": ["5000.00"],
-            "DEMIL Code": ["D"],
-            "Ship Date": ["2020-01-15"],
-            "Station Type": ["State"],
-            "UI": ["Each"],
-        })
+        mock_csv.return_value = pd.DataFrame(
+            {
+                "State": ["CA"],
+                "Agency Name": [" LAPD "],
+                "NSN": ["1005-01-001-0001"],
+                "Item Name": ["RIFLE"],
+                "Quantity": ["10"],
+                "Acquisition Value": ["5000.00"],
+                "DEMIL Code": ["D"],
+                "Ship Date": ["2020-01-15"],
+                "Station Type": ["State"],
+                "UI": ["Each"],
+            }
+        )
 
         df = loader.load_equipment()
 
@@ -112,13 +113,20 @@ class TestLoadEquipment:
     @patch("app.data.loader.pd.read_csv")
     def test_caching_returns_same_object(self, mock_csv):
         """Second call should return cached result without re-reading CSV."""
-        mock_csv.return_value = pd.DataFrame({
-            "State": ["CA"], "Agency Name": ["LAPD"],
-            "NSN": ["1005-01-001-0001"], "Item Name": ["RIFLE"],
-            "Quantity": [10], "Acquisition Value": [5000.0],
-            "DEMIL Code": ["D"], "Ship Date": ["2020-01-15"],
-            "Station Type": ["State"], "UI": ["Each"],
-        })
+        mock_csv.return_value = pd.DataFrame(
+            {
+                "State": ["CA"],
+                "Agency Name": ["LAPD"],
+                "NSN": ["1005-01-001-0001"],
+                "Item Name": ["RIFLE"],
+                "Quantity": [10],
+                "Acquisition Value": [5000.0],
+                "DEMIL Code": ["D"],
+                "Ship Date": ["2020-01-15"],
+                "Station Type": ["State"],
+                "UI": ["Each"],
+            }
+        )
 
         df1 = loader.load_equipment()
         df2 = loader.load_equipment()
@@ -143,13 +151,20 @@ class TestLoadEquipment:
     @patch("app.data.loader.pd.read_csv")
     def test_coercion_of_bad_values(self, mock_csv):
         """Non-numeric values should be coerced, not crash."""
-        mock_csv.return_value = pd.DataFrame({
-            "State": ["CA"], "Agency Name": ["LAPD"],
-            "NSN": ["1005-01-001-0001"], "Item Name": ["RIFLE"],
-            "Quantity": ["INVALID"], "Acquisition Value": ["NOT_A_NUMBER"],
-            "DEMIL Code": [None], "Ship Date": ["not-a-date"],
-            "Station Type": [None], "UI": ["Each"],
-        })
+        mock_csv.return_value = pd.DataFrame(
+            {
+                "State": ["CA"],
+                "Agency Name": ["LAPD"],
+                "NSN": ["1005-01-001-0001"],
+                "Item Name": ["RIFLE"],
+                "Quantity": ["INVALID"],
+                "Acquisition Value": ["NOT_A_NUMBER"],
+                "DEMIL Code": [None],
+                "Ship Date": ["not-a-date"],
+                "Station Type": [None],
+                "UI": ["Each"],
+            }
+        )
 
         df = loader.load_equipment()
         assert df["Acquisition Value"].iloc[0] == 0.0
@@ -177,16 +192,18 @@ class TestLoadBases:
 
     @patch("app.data.loader.pd.read_csv")
     def test_success_with_geo_parsing(self, mock_csv):
-        mock_csv.return_value = pd.DataFrame({
-            "Geo Point": ["31.23, -85.65", "34.91, -117.88"],
-            "COMPONENT": [" Army Active ", "Air Force Active"],
-            "Site Name": ["Fort Rucker", "Edwards AFB"],
-            "State Terr": ["Alabama", "California"],
-            "Oper Stat": ["Active", None],
-            "Joint Base": ["N/A", None],
-            "AREA": ["880", "470"],
-            "PERIMETER": ["120", "90"],
-        })
+        mock_csv.return_value = pd.DataFrame(
+            {
+                "Geo Point": ["31.23, -85.65", "34.91, -117.88"],
+                "COMPONENT": [" Army Active ", "Air Force Active"],
+                "Site Name": ["Fort Rucker", "Edwards AFB"],
+                "State Terr": ["Alabama", "California"],
+                "Oper Stat": ["Active", None],
+                "Joint Base": ["N/A", None],
+                "AREA": ["880", "470"],
+                "PERIMETER": ["120", "90"],
+            }
+        )
 
         df = loader.load_bases()
         assert len(df) == 2
@@ -198,16 +215,18 @@ class TestLoadBases:
     @patch("app.data.loader.pd.read_csv")
     def test_invalid_geo_point_dropped(self, mock_csv):
         """Rows with unparseable Geo Point should be dropped."""
-        mock_csv.return_value = pd.DataFrame({
-            "Geo Point": ["INVALID", "34.91, -117.88"],
-            "COMPONENT": ["Army", "Air Force"],
-            "Site Name": ["Base A", "Base B"],
-            "State Terr": ["Alabama", "California"],
-            "Oper Stat": ["Active", "Active"],
-            "Joint Base": ["N/A", "N/A"],
-            "AREA": [100, 200],
-            "PERIMETER": [50, 60],
-        })
+        mock_csv.return_value = pd.DataFrame(
+            {
+                "Geo Point": ["INVALID", "34.91, -117.88"],
+                "COMPONENT": ["Army", "Air Force"],
+                "Site Name": ["Base A", "Base B"],
+                "State Terr": ["Alabama", "California"],
+                "Oper Stat": ["Active", "Active"],
+                "Joint Base": ["N/A", "N/A"],
+                "AREA": [100, 200],
+                "PERIMETER": [50, 60],
+            }
+        )
 
         df = loader.load_bases()
         assert len(df) == 1  # Only valid row kept
@@ -220,16 +239,18 @@ class TestLoadBases:
 
     @patch("app.data.loader.pd.read_csv")
     def test_caching(self, mock_csv):
-        mock_csv.return_value = pd.DataFrame({
-            "Geo Point": ["31.23, -85.65"],
-            "COMPONENT": ["Army Active"],
-            "Site Name": ["Fort Rucker"],
-            "State Terr": ["Alabama"],
-            "Oper Stat": ["Active"],
-            "Joint Base": ["N/A"],
-            "AREA": [880],
-            "PERIMETER": [120],
-        })
+        mock_csv.return_value = pd.DataFrame(
+            {
+                "Geo Point": ["31.23, -85.65"],
+                "COMPONENT": ["Army Active"],
+                "Site Name": ["Fort Rucker"],
+                "State Terr": ["Alabama"],
+                "Oper Stat": ["Active"],
+                "Joint Base": ["N/A"],
+                "AREA": [880],
+                "PERIMETER": [120],
+            }
+        )
 
         loader.load_bases()
         loader.load_bases()
@@ -246,15 +267,17 @@ class TestLoadHealthcare:
 
     @patch("app.data.loader.pd.read_csv")
     def test_success_with_transformations(self, mock_csv):
-        mock_csv.return_value = pd.DataFrame({
-            "Serial No": [0],
-            "description": ["Patient with allergies"],
-            "medical_specialty": [" Allergy / Immunology "],
-            "sample_name": ["Sample A"],
-            "transcription": ["text"],
-            "keywords": [" allergy, rhinitis, "],
-            "cleaned_transcription": ["cleaned text here"],
-        })
+        mock_csv.return_value = pd.DataFrame(
+            {
+                "Serial No": [0],
+                "description": ["Patient with allergies"],
+                "medical_specialty": [" Allergy / Immunology "],
+                "sample_name": ["Sample A"],
+                "transcription": ["text"],
+                "keywords": [" allergy, rhinitis, "],
+                "cleaned_transcription": ["cleaned text here"],
+            }
+        )
 
         df = loader.load_healthcare()
         assert len(df) == 1
@@ -271,12 +294,17 @@ class TestLoadHealthcare:
 
     @patch("app.data.loader.pd.read_csv")
     def test_caching(self, mock_csv):
-        mock_csv.return_value = pd.DataFrame({
-            "Serial No": [0], "description": ["test"],
-            "medical_specialty": ["Specialty"],
-            "sample_name": ["A"], "transcription": ["text"],
-            "keywords": ["kw"], "cleaned_transcription": ["text"],
-        })
+        mock_csv.return_value = pd.DataFrame(
+            {
+                "Serial No": [0],
+                "description": ["test"],
+                "medical_specialty": ["Specialty"],
+                "sample_name": ["A"],
+                "transcription": ["text"],
+                "keywords": ["kw"],
+                "cleaned_transcription": ["text"],
+            }
+        )
         loader.load_healthcare()
         loader.load_healthcare()
         assert mock_csv.call_count == 1

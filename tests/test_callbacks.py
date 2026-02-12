@@ -4,11 +4,11 @@ Tests call callback functions directly with mock data injected
 into the loader cache. Each callback's return values are validated
 for correct types and structure.
 """
+
 import pytest
 import plotly.graph_objects as go
 
 from app.data import loader
-
 
 # ── Fixtures to seed loader cache with mock data ─────────────────
 
@@ -43,14 +43,15 @@ def seed_ecg_cache(mock_ecg_precomputed):
 
 
 class TestEquipmentCallbacks:
-
     def test_update_equipment_no_filters(self, seed_equipment_cache):
         """Callback with no filters returns all 11 outputs."""
         from app.tabs.tab_equipment import update_equipment
 
         result = update_equipment(
-            states=None, year_range=[2019, 2021],
-            categories=None, map_metric="value",
+            states=None,
+            year_range=[2019, 2021],
+            categories=None,
+            map_metric="value",
         )
         assert len(result) == 11
 
@@ -67,8 +68,10 @@ class TestEquipmentCallbacks:
         from app.tabs.tab_equipment import update_equipment
 
         result = update_equipment(
-            states=["CA"], year_range=[2019, 2021],
-            categories=None, map_metric="count",
+            states=["CA"],
+            year_range=[2019, 2021],
+            categories=None,
+            map_metric="count",
         )
         assert len(result) == 11
         for fig in result[1:]:
@@ -79,8 +82,10 @@ class TestEquipmentCallbacks:
         from app.tabs.tab_equipment import update_equipment
 
         result = update_equipment(
-            states=None, year_range=[2019, 2021],
-            categories=["Weapons & Firearms"], map_metric="value",
+            states=None,
+            year_range=[2019, 2021],
+            categories=["Weapons & Firearms"],
+            map_metric="value",
         )
         assert len(result) == 11
 
@@ -91,14 +96,15 @@ class TestEquipmentCallbacks:
 
 
 class TestBasesCallbacks:
-
     def test_update_bases_no_filters(self, seed_bases_cache):
         """Callback with no filters returns 10 figure outputs."""
         from app.tabs.tab_bases import update_bases
 
         result = update_bases(
-            components=None, statuses=None,
-            states=None, joints=None,
+            components=None,
+            statuses=None,
+            states=None,
+            joints=None,
         )
         assert len(result) == 10
         for fig in result:
@@ -109,8 +115,10 @@ class TestBasesCallbacks:
         from app.tabs.tab_bases import update_bases
 
         result = update_bases(
-            components=["Army Active"], statuses=None,
-            states=None, joints=None,
+            components=["Army Active"],
+            statuses=None,
+            states=None,
+            joints=None,
         )
         assert len(result) == 10
         for fig in result:
@@ -123,7 +131,6 @@ class TestBasesCallbacks:
 
 
 class TestHealthcareCallbacks:
-
     def test_update_healthcare_no_filters(self, seed_healthcare_cache):
         """Callback with no filters returns 7 outputs."""
         from app.tabs.tab_healthcare import update_healthcare
@@ -144,7 +151,8 @@ class TestHealthcareCallbacks:
         from app.tabs.tab_healthcare import update_healthcare
 
         result = update_healthcare(
-            specialties=["Orthopedic"], keyword=None,
+            specialties=["Orthopedic"],
+            keyword=None,
         )
         assert len(result) == 7
 
@@ -153,7 +161,8 @@ class TestHealthcareCallbacks:
         from app.tabs.tab_healthcare import update_healthcare
 
         result = update_healthcare(
-            specialties=None, keyword="knee",
+            specialties=None,
+            keyword="knee",
         )
         assert len(result) == 7
 
@@ -162,7 +171,8 @@ class TestHealthcareCallbacks:
         from app.tabs.tab_healthcare import show_transcription
 
         is_open, text = show_transcription(
-            selected_rows=None, data=None,
+            selected_rows=None,
+            data=None,
         )
         assert is_open is False
         assert text == ""
@@ -174,7 +184,6 @@ class TestHealthcareCallbacks:
 
 
 class TestEcgCallbacks:
-
     def test_update_class_distribution(self, seed_ecg_cache):
         """Distribution callback returns a Figure."""
         from app.tabs.tab_ecg import update_class_distribution
@@ -240,7 +249,6 @@ class TestEcgCallbacks:
 
 
 class TestCombinedCallbacks:
-
     def test_update_combined_no_filters(self, seed_equipment_cache, seed_bases_cache):
         """Combined callback returns 10 figures."""
         from app.tabs.tab_combined import update_combined
@@ -266,7 +274,6 @@ class TestCombinedCallbacks:
 
 
 class TestEcgUtilities:
-
     def test_generate_ecg_beat_length(self):
         """Generated beat has requested length."""
         from app.tabs.tab_ecg import _generate_ecg_beat

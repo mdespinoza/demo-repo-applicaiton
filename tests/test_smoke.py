@@ -1,4 +1,5 @@
 """Smoke tests demonstrating fixture usage and basic test patterns."""
+
 import pandas as pd
 
 
